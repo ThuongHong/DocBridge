@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "converter-desktop"
+version = "0.1.0"
+description = "Windows document translation with Office and Markdown exports"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "PySide6-Essentials>=6.8,<7",
+  "lxml>=5.3,<7",
+  "httpx>=0.28,<1",
+  "keyring>=25,<26",
+  "pdfminer.six>=20240706",
+  "pdfplumber>=0.11,<1",
+  "pypdfium2>=4.30,<6",
+  "pytesseract>=0.3.13,<0.4",
+  "python-docx>=1.1,<2",
+  "Pillow>=10.4,<13",
+]
+
+[project.optional-dependencies]
+offline = ["argostranslate==1.9.6"]
+dev = ["pytest>=8,<10", "reportlab>=4,<5", "ruff>=0.9,<1", "openpyxl>=3.1,<4", "python-pptx>=1,<2", "xlsxwriter>=3,<4"]
+build = ["pyinstaller>=6.11,<7"]
+
+[project.scripts]
+converter = "converter.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/converter"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B"]

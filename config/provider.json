@@ -1,0 +1,11 @@
+{
+  "name": "Dịch online",
+  "endpoint": "",
+  "model": "",
+  "auth_header": "Authorization",
+  "auth_prefix": "Bearer ",
+  "batch_chars": 6000,
+  "max_output_tokens": 4096,
+  "timeout_seconds": 120,
+  "retries": 3
+}
