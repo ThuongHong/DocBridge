@@ -1,42 +1,58 @@
 from __future__ import annotations
 
 import multiprocessing as mp
+import os
 import queue
 from dataclasses import asdict
+from html import escape
 from pathlib import Path
 
-from PySide6.QtCore import QItemSelectionModel, Qt, QTimer, QUrl
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import QItemSelectionModel, QSize, Qt, QTimer, QUrl
+from PySide6.QtGui import QAction, QDesktopServices
 from PySide6.QtWidgets import (
+    QAbstractButton,
     QAbstractItemView,
+    QCheckBox,
     QComboBox,
+    QDialog,
     QFileDialog,
     QFormLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QScrollArea,
+    QSpinBox,
     QSplitter,
+    QStackedWidget,
+    QStyle,
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
     QTextBrowser,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
 
+from .appearance import apply_theme, settings_icon
 from .config import (
     ProviderConfig,
     data_root,
     get_api_key,
     load_preferences,
+    normalize_endpoint,
     save_preferences,
     set_api_key,
 )
+from .glossary import automotive_pack, default_glossary
+from .i18n import ENGLISH, TEMPLATES, translate
 from .markdown import render_markdown
+from .models import SUPPORTED
 from .pipeline import Pipeline
 from .store import Store
 from .worker import run_jobs, test_online
@@ -66,6 +82,16 @@ class MainWindow(QMainWindow):
         self.store = Store(root or data_root())
         self.store.recover()
         self.preferences = load_preferences()
+        if "glossary_pack_version" not in self.preferences:
+            self.preferences["glossary"] = default_glossary() | self.preferences.get("glossary", {})
+            self.preferences["glossary_pack_version"] = automotive_pack()["version"]
+        self.language = self.preferences.get("language", "en")
+        if self.language not in {"en", "vi"}:
+            self.language = "en"
+        self.theme = self.preferences.get("theme", "light")
+        if self.theme not in {"light", "dark"}:
+            self.theme = "light"
+        apply_theme(self.theme)
         self.profile = ProviderConfig.load()
         self.api_key = get_api_key()
         self.process = None
@@ -84,11 +110,20 @@ class MainWindow(QMainWindow):
         self.build_review()
         self.build_glossary()
         self.build_settings()
+        self.settings_button = QToolButton(self)
+        self.settings_button.setAutoRaise(True)
+        self.settings_button.setFixedSize(28, 28)
+        self.settings_button.setIconSize(QSize(18, 18))
+        self.settings_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        self.settings_button.clicked.connect(self.open_settings)
+        self.tabs.setCornerWidget(self.settings_button, Qt.Corner.TopRightCorner)
+        self.bind_translations()
+        self.retranslate_ui()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.poll)
         self.timer.start(100)
         self.refresh_jobs()
-        self.statusBar().showMessage("Sẵn sàng. Chọn file và chế độ xuất để bắt đầu.")
+        self.show_status("Sẵn sàng. Chọn file và chế độ xuất để bắt đầu.")
 
     def button(self, label, callback, layout):
         button = QPushButton(label)
@@ -98,14 +133,53 @@ class MainWindow(QMainWindow):
 
     def build_documents(self):
         page = QWidget()
+        self.documents_page = page
         layout = QVBoxLayout(page)
+        layout.setContentsMargins(16, 14, 16, 14)
+        layout.setSpacing(12)
         toolbar = QHBoxLayout()
-        self.add_button = self.button("Thêm file", self.add_files, toolbar)
-        self.review_button = self.button("Review bản dịch", self.open_selected_review, toolbar)
-        self.button("Mở kết quả", self.open_outputs, toolbar)
-        self.delete_button = self.button("Xóa khỏi lịch sử", self.delete_jobs, toolbar)
+        title = QLabel("Danh sách tài liệu")
+        font = title.font()
+        font.setPointSize(12)
+        font.setBold(True)
+        title.setFont(font)
+        toolbar.addWidget(title)
+        self.selection_summary = QLabel()
+        toolbar.addWidget(self.selection_summary)
         toolbar.addStretch()
+        self.add_button = QToolButton()
+        self.add_button.setText("Thêm tài liệu")
+        self.add_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+        self.add_button.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        self.add_button.setMinimumHeight(30)
+        self.add_button.clicked.connect(self.add_files)
+        self.add_menu = QMenu(self)
+        self.add_files_action = self.add_menu.addAction("Thêm file", self.add_files)
+        self.add_folder_action = self.add_menu.addAction("Thêm thư mục", self.add_folder)
+        self.add_button.setMenu(self.add_menu)
+        toolbar.addWidget(self.add_button)
+        self.more_button = QToolButton()
+        self.more_button.setText("⋯")
+        self.more_button.setAutoRaise(True)
+        self.more_button.setFixedSize(28, 28)
+        font = self.more_button.font()
+        font.setPointSize(16)
+        self.more_button.setFont(font)
+        self.more_button.setStyleSheet("QToolButton::menu-indicator { image: none; }")
+        self.more_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.more_menu = QMenu(self)
+        self.review_button = self.more_menu.addAction("Review bản dịch", self.open_selected_review)
+        self.open_output_action = self.more_menu.addAction("Mở kết quả", self.open_outputs)
+        self.export_button = self.more_menu.addAction(
+            "Xuất lại bản đã review", lambda: self.start_jobs(export_only=True)
+        )
+        self.more_menu.addSeparator()
+        self.delete_button = self.more_menu.addAction("Xóa khỏi lịch sử", self.delete_jobs)
+        self.cancel_button = self.more_menu.addAction("Hủy", self.cancel_jobs)
+        self.more_button.setMenu(self.more_menu)
+        toolbar.addWidget(self.more_button)
         layout.addLayout(toolbar)
+
         self.job_table = QTableWidget(0, 4)
         self.job_table.setHorizontalHeaderLabels(
             ["Tài liệu", "Đầu ra Office", "Trạng thái", "Kết quả / lỗi"]
@@ -118,48 +192,108 @@ class MainWindow(QMainWindow):
         self.job_table.setColumnWidth(1, 140)
         self.job_table.setColumnWidth(2, 190)
         self.job_table.cellDoubleClicked.connect(lambda *_: self.open_selected_review())
-        layout.addWidget(self.job_table)
-        form = QFormLayout()
+        self.job_table.itemSelectionChanged.connect(self.update_selection_actions)
+        self.job_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.job_table.customContextMenuRequested.connect(self.open_job_menu)
+        self.job_stack = QStackedWidget()
+        self.empty_page = QWidget()
+        empty_layout = QVBoxLayout(self.empty_page)
+        empty_layout.addStretch()
+        empty_title = QLabel("Thả tài liệu vào đây để bắt đầu")
+        empty_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        font = empty_title.font()
+        font.setPointSize(16)
+        empty_title.setFont(font)
+        empty_layout.addWidget(empty_title)
+        hint = QLabel("Hoặc dùng Add để chọn file hoặc cả thư mục. Hỗ trợ DOCX, PPTX, XLSX và PDF.")
+        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hint.setWordWrap(True)
+        empty_layout.addWidget(hint)
+        empty_layout.addStretch()
+        self.job_stack.addWidget(self.empty_page)
+        self.job_stack.addWidget(self.job_table)
+        layout.addWidget(self.job_stack, 1)
+
+        options = QHBoxLayout()
+        options.addWidget(QLabel("Dịch Trung → Anh:"))
         self.provider_combo = QComboBox()
         self.provider_combo.addItem(self.profile.name, "online")
         self.provider_combo.addItem("Offline — Argos Trung → Anh", "offline")
-        self.provider_combo.setCurrentIndex(
-            1 if self.preferences.get("provider") == "offline" else 0
-        )
+        self.provider_combo.setCurrentIndex(1 if self.preferences.get("provider") == "offline" else 0)
         self.provider_combo.currentIndexChanged.connect(self.update_privacy_label)
-        form.addRow("Dịch Trung → Anh:", self.provider_combo)
-        self.privacy_label = QLabel()
-        form.addRow("", self.privacy_label)
+        options.addWidget(self.provider_combo, 2)
+        options.addSpacing(16)
+        options.addWidget(QLabel("Xuất:"))
         self.mode_combo = QComboBox()
         for mode, name in MODE_NAMES.items():
             self.mode_combo.addItem(name, mode)
-        self.mode_combo.setCurrentIndex(
-            max(0, self.mode_combo.findData(self.preferences.get("mode", "both")))
-        )
-        form.addRow("Xuất:", self.mode_combo)
-        form.addRow("", QLabel("PDF → Office là DOCX dựng lại. Office đầu vào giữ định dạng gốc."))
+        self.mode_combo.setCurrentIndex(max(0, self.mode_combo.findData(
+            self.preferences.get("mode", "both")
+        )))
+        options.addWidget(self.mode_combo, 1)
+        layout.addLayout(options)
+        self.privacy_label = QLabel()
+        self.privacy_label.setWordWrap(True)
+        layout.addWidget(self.privacy_label)
+        self.mode_combo.setToolTip("PDF → Office là DOCX dựng lại. Office đầu vào giữ định dạng gốc.")
         output_row = QHBoxLayout()
-        self.output_edit = QLineEdit(
-            self.preferences.get("output_dir", str(Path.home() / "Documents/Translations"))
+        output_row.addWidget(QLabel("Lưu vào:"))
+        self.output_edit = QLineEdit(self.preferences.get(
+            "output_dir", str(Path.home() / "Documents/Translations")
+        ))
+        self.output_browse_action = self.output_edit.addAction(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon),
+            QLineEdit.ActionPosition.TrailingPosition,
         )
-        output_row.addWidget(self.output_edit)
-        self.button("Chọn thư mục", self.choose_output, output_row)
-        form.addRow("Lưu vào:", output_row)
-        layout.addLayout(form)
+        self.output_browse_action.triggered.connect(self.choose_output)
+        output_row.addWidget(self.output_edit, 1)
+        layout.addLayout(output_row)
         actions = QHBoxLayout()
-        self.start_button = self.button("Dịch file đã chọn / Tiếp tục", self.start_jobs, actions)
-        self.export_button = self.button(
-            "Xuất lại bản đã review", lambda: self.start_jobs(export_only=True), actions
-        )
-        self.pause_button = self.button("Tạm dừng", self.pause_jobs, actions)
-        self.cancel_button = self.button("Hủy", self.cancel_jobs, actions)
-        layout.addLayout(actions)
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
-        layout.addWidget(self.progress_bar)
+        actions.addWidget(self.progress_bar, 1)
+        actions.addStretch()
+        self.start_button = self.button("Dịch / Tiếp tục", self.start_jobs, actions)
+        self.start_button.setMinimumSize(190, 36)
+        self.start_button.setStyleSheet(
+            "QPushButton { border-radius: 6px; padding: 6px 14px; }"
+            "QPushButton:enabled { background: #2463a6; color: white; border: 1px solid #2463a6; }"
+            "QPushButton:enabled:hover { background: #1d528d; }"
+            "QPushButton:disabled { background: palette(button); color: palette(mid); "
+            "border: 1px solid palette(mid); }"
+        )
+        self.pause_button = self.button("Tạm dừng", self.pause_jobs, actions)
+        self.pause_button.setMinimumSize(190, 36)
+        layout.addLayout(actions)
         self.tabs.addTab(page, "Tài liệu & lịch sử")
+        self.visible_jobs = {}
         self.update_privacy_label()
         self.set_busy(False)
+
+    def update_selection_actions(self):
+        ids = self.selected_ids()
+        busy = getattr(self, "busy", False)
+        self.selection_summary.setText(self.tr("{selected}/{total} đã chọn").format(
+            selected=len(ids), total=self.job_table.rowCount()
+        ))
+        self.start_button.setEnabled(bool(ids) and not busy)
+        self.more_button.setEnabled(bool(ids) or busy)
+        self.review_button.setEnabled(
+            len(ids) == 1 and not busy and self.store.document_path(ids[0]).exists()
+        )
+        self.export_button.setEnabled(bool(ids) and not busy)
+        self.delete_button.setEnabled(bool(ids) and not busy)
+        self.open_output_action.setEnabled(any(
+            self.visible_jobs.get(job_id, {}).get("output_dir") for job_id in ids
+        ))
+
+    def open_job_menu(self, point):
+        item = self.job_table.itemAt(point)
+        if item is None:
+            return
+        if item.row() not in {index.row() for index in self.job_table.selectedIndexes()}:
+            self.job_table.selectRow(item.row())
+        self.more_menu.exec(self.job_table.viewport().mapToGlobal(point))
 
     def build_review(self):
         page = QWidget()
@@ -216,11 +350,23 @@ class MainWindow(QMainWindow):
         layout.addWidget(
             QLabel("Thuật ngữ cố định: nhập tiếng Trung và bản dịch tiếng Anh tương ứng.")
         )
+        layout.addWidget(QLabel(
+            "Bộ thuật ngữ automotive/Bosch/AUTOSAR: {count} mục có thể chỉnh sửa.".format(
+                count=len(default_glossary())
+            )
+        ))
+        self.glossary_search = QLineEdit()
+        self.glossary_search.setPlaceholderText("Tìm thuật ngữ")
+        self.glossary_search.textChanged.connect(self.filter_glossary)
+        layout.addWidget(self.glossary_search)
+        self.glossary_enabled = QCheckBox("Áp dụng thuật ngữ khi dịch")
+        self.glossary_enabled.setChecked(self.preferences.get("glossary_enabled", True))
+        layout.addWidget(self.glossary_enabled)
         self.glossary_table = QTableWidget(0, 2)
         self.glossary_table.setHorizontalHeaderLabels(["Tiếng Trung", "Tiếng Anh"])
         self.glossary_table.horizontalHeader().setStretchLastSection(True)
         self.glossary_table.setColumnWidth(0, 400)
-        for source, target in self.preferences.get("glossary", {}).items():
+        for source, target in self.preferences.get("glossary", default_glossary()).items():
             row = self.glossary_table.rowCount()
             self.glossary_table.insertRow(row)
             self.glossary_table.setItem(row, 0, QTableWidgetItem(source))
@@ -234,6 +380,9 @@ class MainWindow(QMainWindow):
         )
         self.button("Xóa dòng chọn", self.delete_glossary_rows, actions)
         self.button("Lưu thuật ngữ", self.persist_preferences, actions)
+        self.button("Khôi phục thuật ngữ automotive", self.restore_automotive_glossary, actions)
+        self.button("Nguồn thuật ngữ", self.show_glossary_sources, actions)
+        self.glossary_edit_buttons = [actions.itemAt(i).widget() for i in range(actions.count() - 1)]
         layout.addLayout(actions)
         layout.addWidget(
             QLabel("Đổi glossary khi đang dịch dở: tạo job mới để giữ nhất quán bản dịch.")
@@ -241,55 +390,334 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(page, "Thuật ngữ")
 
     def build_settings(self):
-        page = QWidget()
-        layout = QVBoxLayout(page)
-        form = QFormLayout()
-        form.addRow("Dịch vụ:", QLabel(self.profile.name))
+        self.settings_dialog = QDialog(self)
+        self.settings_dialog.setWindowTitle("Cài đặt")
+        self.settings_dialog.resize(740, 620)
+        layout = QVBoxLayout(self.settings_dialog)
+        self.settings_tabs = QTabWidget()
+        layout.addWidget(self.settings_tabs)
+
+        general_page = QWidget()
+        general_layout = QVBoxLayout(general_page)
+        general_form = QFormLayout()
+        self.theme_combo = QComboBox()
+        self.theme_combo.addItem("Sáng", "light")
+        self.theme_combo.addItem("Tối", "dark")
+        self.theme_combo.setCurrentIndex(self.theme_combo.findData(self.theme))
+        general_form.addRow("Giao diện:", self.theme_combo)
+        self.language_combo = QComboBox()
+        self.language_combo.addItem("English", "en")
+        self.language_combo.addItem("Tiếng Việt", "vi")
+        self.language_combo.setCurrentIndex(self.language_combo.findData(self.language))
+        general_form.addRow("Ngôn ngữ giao diện:", self.language_combo)
+        general_layout.addLayout(general_form)
+        general_layout.addWidget(QLabel("Ngôn ngữ giao diện không đổi ngôn ngữ dịch: Trung → Anh."))
+        general_layout.addStretch()
+        self.settings_tabs.addTab(general_page, "Chung")
+
+        online_scroll = QScrollArea()
+        online_scroll.setWidgetResizable(True)
+        online_page = QWidget()
+        online_scroll.setWidget(online_page)
+        online_layout = QVBoxLayout(online_page)
+        note = QLabel("Dùng dịch vụ tương thích OpenAI Chat Completions; có thể đổi nhà cung cấp và model.")
+        note.setWordWrap(True)
+        online_layout.addWidget(note)
+        online_form = QFormLayout()
+        self.service_name_edit = QLineEdit(self.tr(self.profile.name))
+        self.endpoint_edit = QLineEdit(self.profile.endpoint)
+        self.endpoint_edit.setPlaceholderText("https://api.example.com/v1 hoặc URL đầy đủ")
+        self.model_edit = QLineEdit(self.profile.model)
+        self.model_edit.setPlaceholderText("Nhập model ID do nhà cung cấp cung cấp")
+        online_form.addRow("Tên dịch vụ:", self.service_name_edit)
+        online_form.addRow("API URL:", self.endpoint_edit)
+        online_form.addRow("Model ID:", self.model_edit)
         self.key_edit = QLineEdit(self.api_key)
         self.key_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.key_edit.setPlaceholderText("Nhập API key của bạn")
-        form.addRow("API key:", self.key_edit)
-        actions = QHBoxLayout()
-        self.button("Lưu key", self.save_key, actions)
-        self.button("Xóa key", self.clear_key, actions)
-        self.connection_button = self.button("Kiểm tra kết nối", self.test_connection, actions)
-        form.addRow("", actions)
+        online_form.addRow("API key:", self.key_edit)
+        self.auth_enabled = QCheckBox("Dùng xác thực API")
+        self.auth_enabled.setChecked(bool(self.profile.auth_header))
+        online_form.addRow("", self.auth_enabled)
+        show_key = QCheckBox("Hiện API key")
+        show_key.toggled.connect(lambda checked: self.key_edit.setEchoMode(
+            QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
+        ))
+        online_form.addRow("", show_key)
+        online_layout.addLayout(online_form)
+        key_actions = QHBoxLayout()
+        self.button("Lưu key", self.save_key, key_actions)
+        self.button("Xóa key", self.clear_key, key_actions)
+        self.connection_button = self.button("Kiểm tra kết nối", self.test_connection, key_actions)
+        online_layout.addLayout(key_actions)
         self.key_status = QLabel()
-        form.addRow("", self.key_status)
-        form.addRow(
-            "",
-            QLabel("Key được lưu trong kho mật khẩu Windows. Có thể dùng key tạm trong phiên này."),
+        self.key_status.setWordWrap(True)
+        online_layout.addWidget(self.key_status)
+        for text in (
+            "Key được lưu trong kho mật khẩu hệ điều hành. Có thể dùng key tạm trong phiên này.",
+            "Kiểm tra kết nối gửi một câu thử ngắn, có thể được dịch vụ tính phí.",
+        ):
+            label = QLabel(text)
+            label.setWordWrap(True)
+            online_layout.addWidget(label)
+
+        self.advanced_button = QPushButton("Tuỳ chọn nâng cao")
+        self.advanced_button.setCheckable(True)
+        online_layout.addWidget(self.advanced_button)
+        self.advanced_panel = QWidget()
+        advanced_form = QFormLayout(self.advanced_panel)
+        self.auth_header_edit = QLineEdit(self.profile.auth_header or "Authorization")
+        self.auth_prefix_edit = QLineEdit(
+            self.profile.auth_prefix if self.profile.auth_header else "Bearer "
         )
-        form.addRow(
-            "", QLabel("Kiểm tra kết nối gửi một câu thử ngắn, có thể được dịch vụ tính phí.")
+        self.auth_enabled.toggled.connect(self.auth_header_edit.setEnabled)
+        self.auth_enabled.toggled.connect(self.auth_prefix_edit.setEnabled)
+        self.auth_header_edit.setEnabled(self.auth_enabled.isChecked())
+        self.auth_prefix_edit.setEnabled(self.auth_enabled.isChecked())
+        advanced_form.addRow("Header xác thực:", self.auth_header_edit)
+        advanced_form.addRow("Prefix xác thực:", self.auth_prefix_edit)
+        hint = QLabel("Ví dụ: Authorization + 'Bearer ' hoặc api-key + prefix trống.")
+        hint.setWordWrap(True)
+        advanced_form.addRow("", hint)
+        self.batch_chars_spin = QSpinBox()
+        self.batch_chars_spin.setRange(100, 1_000_000)
+        self.batch_chars_spin.setValue(self.profile.batch_chars)
+        self.max_tokens_spin = QSpinBox()
+        self.max_tokens_spin.setRange(1, 1_000_000)
+        self.max_tokens_spin.setValue(self.profile.max_output_tokens)
+        self.context_window_spin = QSpinBox()
+        self.context_window_spin.setRange(2048, 10_000_000)
+        self.context_window_spin.setValue(self.profile.context_window_tokens)
+        self.token_margin_spin = QSpinBox()
+        self.token_margin_spin.setRange(0, 1_000_000)
+        self.token_margin_spin.setValue(self.profile.token_safety_margin)
+        self.timeout_spin = QSpinBox()
+        self.timeout_spin.setRange(1, 3600)
+        self.timeout_spin.setValue(self.profile.timeout_seconds)
+        self.retries_spin = QSpinBox()
+        self.retries_spin.setRange(0, 20)
+        self.retries_spin.setValue(self.profile.retries)
+        advanced_form.addRow("Ký tự mỗi batch:", self.batch_chars_spin)
+        advanced_form.addRow("Token đầu ra tối đa:", self.max_tokens_spin)
+        advanced_form.addRow("Context window (token):", self.context_window_spin)
+        advanced_form.addRow("Token dự phòng:", self.token_margin_spin)
+        budget_hint = QLabel("Nhập context window thật của model. App ước lượng đầu vào theo byte UTF-8, chừa token đầu ra và tự chia nhỏ khi vượt giới hạn.")
+        budget_hint.setWordWrap(True)
+        advanced_form.addRow("", budget_hint)
+        advanced_form.addRow("Timeout (giây):", self.timeout_spin)
+        advanced_form.addRow("Số lần thử lại:", self.retries_spin)
+        online_layout.addWidget(self.advanced_panel)
+        self.advanced_panel.hide()
+        self.advanced_button.toggled.connect(self.advanced_panel.setVisible)
+        self.apply_provider_button = QPushButton("Lưu dịch vụ")
+        self.apply_provider_button.clicked.connect(lambda: self.save_provider_settings(True))
+        online_layout.addWidget(self.apply_provider_button)
+        online_layout.addStretch()
+        self.settings_tabs.addTab(online_scroll, "Dịch vụ online")
+
+        offline_page = QWidget()
+        offline_layout = QVBoxLayout(offline_page)
+        offline_form = QFormLayout()
+        model_row = QHBoxLayout()
+        self.argos_model_edit = QLineEdit(self.preferences.get("argos_model", ""))
+        self.argos_model_edit.setPlaceholderText("Dùng model đi kèm nếu để trống")
+        model_row.addWidget(self.argos_model_edit)
+        self.button("Chọn model…", self.choose_argos_model, model_row)
+        offline_form.addRow("Model offline:", model_row)
+        model_link = QLabel(
+            '<a href="https://www.argosopentech.com/argospm/index/">'
+            'Argos Translate Package Index ↗</a>'
         )
+        model_link.setOpenExternalLinks(True)
+        offline_form.addRow("Tải model:", model_link)
+        hint = QLabel("Chọn package Trung → Anh (.argosmodel). Offline cần runtime Argos.")
+        hint.setWordWrap(True)
+        offline_form.addRow("", hint)
         self.ocr_language = QComboBox()
         self.ocr_language.addItem("Trung giản thể + phồn thể + Anh", "chi_sim+chi_tra+eng")
         self.ocr_language.addItem("Trung giản thể + Anh", "chi_sim+eng")
         self.ocr_language.addItem("Trung phồn thể + Anh", "chi_tra+eng")
         self.ocr_language.addItem("Anh (tài liệu thử)", "eng")
-        self.ocr_language.setCurrentIndex(
-            max(
-                0,
-                self.ocr_language.findData(
-                    self.preferences.get("ocr_language", "chi_sim+chi_tra+eng")
-                ),
-            )
+        self.ocr_language.setCurrentIndex(max(0, self.ocr_language.findData(
+            self.preferences.get("ocr_language", "chi_sim+chi_tra+eng")
+        )))
+        offline_form.addRow("OCR:", self.ocr_language)
+        offline_layout.addLayout(offline_form)
+        offline_layout.addStretch()
+        self.settings_tabs.addTab(offline_page, "Offline & OCR")
+
+        actions = QHBoxLayout()
+        actions.addStretch()
+        self.button("Đóng", self.settings_dialog.close, actions)
+        layout.addLayout(actions)
+        self.settings_dialog.finished.connect(self.save_settings_only)
+        self.theme_combo.currentIndexChanged.connect(self.change_appearance)
+        self.language_combo.currentIndexChanged.connect(self.change_appearance)
+        self.ocr_language.currentIndexChanged.connect(self.save_display_preferences)
+        self.argos_model_edit.editingFinished.connect(self.save_display_preferences)
+
+    def provider_from_settings(self):
+        return ProviderConfig(
+            name=self.service_name_edit.text().strip() or "Dịch online",
+            endpoint=normalize_endpoint(self.endpoint_edit.text()),
+            model=self.model_edit.text().strip(),
+            auth_header=self.auth_header_edit.text().strip() if self.auth_enabled.isChecked() else "",
+            auth_prefix=self.auth_prefix_edit.text() if self.auth_enabled.isChecked() else "",
+            batch_chars=self.batch_chars_spin.value(),
+            max_output_tokens=self.max_tokens_spin.value(),
+            timeout_seconds=self.timeout_spin.value(),
+            retries=self.retries_spin.value(),
+            context_window_tokens=self.context_window_spin.value(),
+            token_safety_margin=self.token_margin_spin.value(),
         )
-        form.addRow("OCR:", self.ocr_language)
-        layout.addLayout(form)
-        layout.addStretch()
-        self.tabs.addTab(page, "Cài đặt")
+
+    def save_settings_only(self):
+        self.save_provider_settings()
+        self.save_display_preferences()
+
+    def save_provider_settings(self, require_valid=False):
+        try:
+            profile = self.provider_from_settings()
+            if require_valid:
+                if self.auth_enabled.isChecked() and not profile.auth_header:
+                    raise ValueError("Tên header xác thực không hợp lệ.")
+                profile.validate()
+            profile.save()
+            self.profile = profile
+            self.endpoint_edit.setText(profile.endpoint)
+            self.provider_combo.setItemText(0, self.tr(profile.name))
+            sources = self.provider_combo.property("item_sources") or []
+            if sources:
+                sources[0] = profile.name
+                self.provider_combo.setProperty("item_sources", sources)
+            self.show_status("Đã lưu cấu hình dịch vụ.")
+            return True
+        except Exception as exc:
+            self.error(exc)
+            return False
+
+    def tr(self, text):
+        return translate(str(text), self.language)
+
+    def show_status(self, text):
+        self.status_message = str(text)
+        self.statusBar().showMessage(self.tr(text))
+
+    def bind_translations(self):
+        """Bind static labels once, leaving document text and user inputs untouched."""
+        dynamic = (self.review_title, self.pdf_preview, self.privacy_label, self.key_status)
+        for widget in self.findChildren(QWidget):
+            if isinstance(widget, (QAbstractButton, QLabel)) and widget not in dynamic:
+                text = widget.text()
+                if text in ENGLISH or any(
+                    s.split("{")[0] and text.startswith(s.split("{")[0]) for s in TEMPLATES
+                ):
+                    widget.setProperty("translation_source", text)
+            elif isinstance(widget, QLineEdit):
+                if widget.placeholderText() in ENGLISH:
+                    widget.setProperty("placeholder_source", widget.placeholderText())
+            elif isinstance(widget, QComboBox):
+                widget.setProperty("item_sources", [widget.itemText(i) for i in range(widget.count())])
+
+        for action in self.findChildren(QAction):
+            if action.text() in ENGLISH:
+                action.setProperty("translation_source", action.text())
+
+    def retranslate_ui(self):
+        self.setWindowTitle(self.tr("Converter — Trung → Anh"))
+        self.settings_dialog.setWindowTitle(self.tr("Cài đặt"))
+        self.settings_button.setToolTip(self.tr("Cài đặt"))
+        self.settings_button.setAccessibleName(self.tr("Cài đặt"))
+        self.settings_button.setIcon(settings_icon(self.palette().windowText().color()))
+        self.more_button.setToolTip(self.tr("Thao tác khác"))
+        self.more_button.setAccessibleName(self.tr("Thao tác khác"))
+        self.output_browse_action.setToolTip(self.tr("Chọn thư mục"))
+        self.mode_combo.setToolTip(self.tr("PDF → Office là DOCX dựng lại. Office đầu vào giữ định dạng gốc."))
+        for action in self.findChildren(QAction):
+            if action.property("translation_source"):
+                action.setText(self.tr(action.property("translation_source")))
+        for widget in self.findChildren(QWidget):
+            source = widget.property("translation_source")
+            if source:
+                widget.setText(self.tr(source))
+            placeholder = widget.property("placeholder_source")
+            if placeholder:
+                widget.setPlaceholderText(self.tr(placeholder))
+            if isinstance(widget, QComboBox):
+                for index, text in enumerate(widget.property("item_sources") or []):
+                    widget.setItemText(index, self.tr(text))
+        for index, title in enumerate(("Tài liệu & lịch sử", "Review", "Thuật ngữ")):
+            self.tabs.setTabText(index, self.tr(title).replace("&", "&&"))
+        for index, title in enumerate(("Chung", "Dịch vụ online", "Offline & OCR")):
+            self.settings_tabs.setTabText(index, self.tr(title).replace("&", "&&"))
+        for table, labels in (
+            (self.job_table, ["Tài liệu", "Đầu ra Office", "Trạng thái", "Kết quả / lỗi"]),
+            (self.review_table, ["Vị trí", "Nguồn", "Bản dịch", "Cảnh báo"]),
+            (self.glossary_table, ["Tiếng Trung", "Tiếng Anh"]),
+        ):
+            table.setHorizontalHeaderLabels([self.tr(label) for label in labels])
+        if not self.review_id:
+            self.review_title.setText(self.tr("Chọn một tài liệu trong danh sách để review."))
+        if self.pdf_preview.pixmap().isNull():
+            self.pdf_preview.setText(self.tr("Preview PDF khi chọn đoạn."))
+        if self.review_doc:
+            self.warning_view.setPlainText("\n".join(self.tr(w) for w in self.review_doc.warnings))
+            for row, segment in enumerate(self.review_doc.segments):
+                self.review_table.item(row, 3).setText(self.tr(segment.warning))
+        if self.key_status.property("message_source"):
+            self.set_key_status(self.key_status.property("message_source"))
+        self.update_privacy_label()
+        self.update_markdown_preview()
+        self.refresh_jobs()
+        if hasattr(self, "status_message"):
+            self.show_status(self.status_message)
+
+    def open_settings(self):
+        self.settings_dialog.show()
+        self.settings_dialog.raise_()
+        self.settings_dialog.activateWindow()
+
+    def change_appearance(self):
+        self.theme = self.theme_combo.currentData()
+        self.language = self.language_combo.currentData()
+        apply_theme(self.theme)
+        self.retranslate_ui()
+        self.save_display_preferences()
+
+    def save_display_preferences(self):
+        self.preferences.update({
+            "theme": self.theme,
+            "language": self.language,
+            "ocr_language": self.ocr_language.currentData(),
+            "argos_model": self.argos_model_edit.text().strip(),
+        })
+        try:
+            save_preferences(self.preferences)
+        except OSError as exc:
+            self.error(exc)
+
+    def set_key_status(self, text):
+        self.key_status.setProperty("message_source", str(text))
+        self.key_status.setText(self.tr(text))
+
+    def choose_argos_model(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, self.tr("Chọn model…"), self.argos_model_edit.text(),
+            "Argos model (*.argosmodel)",
+        )
+        if path:
+            self.argos_model_edit.setText(path)
+            self.save_display_preferences()
 
     def update_privacy_label(self):
         self.privacy_label.setText(
-            "Nội dung được gửi đến dịch vụ online đã cấu hình."
+            self.tr("Nội dung được gửi đến dịch vụ online đã cấu hình.")
             if self.provider_combo.currentData() == "online"
-            else "Dịch trên máy bằng Argos; nội dung không gửi đến API."
+            else self.tr("Dịch trên máy bằng Argos; nội dung không gửi đến API.")
         )
 
     def error(self, message):
-        QMessageBox.warning(self, "Converter", str(message))
+        QMessageBox.warning(self, "Converter", self.tr(message))
 
     def selected_ids(self):
         return [
@@ -300,26 +728,29 @@ class MainWindow(QMainWindow):
     def refresh_jobs(self):
         selected = set(self.selected_ids())
         self.job_table.setRowCount(0)
-        for job in self.store.list():
+        self.visible_jobs = {job["id"]: job for job in self.store.list()}
+        for job in self.visible_jobs.values():
             row = self.job_table.rowCount()
             self.job_table.insertRow(row)
             name = QTableWidgetItem(job["name"])
             name.setData(Qt.ItemDataRole.UserRole, job["id"])
             ext = Path(job["name"]).suffix.upper().lstrip(".")
-            output = "DOCX dựng lại" if ext == "PDF" else ext
-            state = self.progress_messages.get(job["id"], STATUS.get(job["status"], job["status"]))
+            output = self.tr("DOCX dựng lại") if ext == "PDF" else ext
+            state = self.tr(self.progress_messages.get(
+                job["id"], STATUS.get(job["status"], job["status"])
+            ))
             results = []
             for kind, value in job["exports"].items():
                 if value.get("status") == "done":
-                    results.append(f"{MODE_NAMES[kind]}: {Path(value['path']).name}")
+                    results.append(f"{self.tr(MODE_NAMES[kind])}: {Path(value['path']).name}")
                 elif value.get("status") == "stale":
-                    results.append(f"{MODE_NAMES[kind]}: cần xuất lại")
+                    results.append(f"{self.tr(MODE_NAMES[kind])}: {self.tr('cần xuất lại')}")
             for col, item in enumerate(
                 [
                     name,
                     QTableWidgetItem(output),
                     QTableWidgetItem(state),
-                    QTableWidgetItem(job["error"] or " · ".join(results)),
+                    QTableWidgetItem(self.tr(job["error"]) if job["error"] else " · ".join(results)),
                 ]
             ):
                 self.job_table.setItem(row, col, item)
@@ -330,15 +761,27 @@ class MainWindow(QMainWindow):
                     | QItemSelectionModel.SelectionFlag.Rows,
                 )
 
+        self.job_stack.setCurrentWidget(
+            self.job_table if self.job_table.rowCount() else self.empty_page
+        )
+        self.update_selection_actions()
+
     def add_paths(self, paths):
         if self.process:
             return
         added = []
+        failures = []
         for path in paths:
             try:
                 added.append(self.store.add(Path(path)))
             except Exception as exc:
-                self.error(exc)
+                failures.append(f"{Path(path).name}: {self.tr(exc)}")
+        if failures:
+            self.error(self.tr("Không nhập được {count} file:\n{errors}").format(
+                count=len(failures), errors="\n".join(failures[:10])
+            ))
+        if not added:
+            return
         self.refresh_jobs()
         self.job_table.clearSelection()
         for row in range(self.job_table.rowCount()):
@@ -348,26 +791,69 @@ class MainWindow(QMainWindow):
                     QItemSelectionModel.SelectionFlag.Select
                     | QItemSelectionModel.SelectionFlag.Rows,
                 )
+        self.show_status("Đã thêm {count} tài liệu.".format(count=len(added)))
 
     def add_files(self):
         paths, _ = QFileDialog.getOpenFileNames(
-            self, "Thêm tài liệu", "", "Documents (*.docx *.pptx *.xlsx *.pdf)"
+            self, self.tr("Thêm tài liệu"), "", "Documents (*.docx *.pptx *.xlsx *.pdf)"
         )
         self.add_paths(paths)
+
+    def add_folder(self):
+        if self.process:
+            return
+        folder = QFileDialog.getExistingDirectory(self, self.tr("Chọn thư mục tài liệu"))
+        if folder:
+            self.import_folder(Path(folder))
+
+    def import_folder(self, folder):
+        """Scan subfolders, skipping lock files and the app's own job/output directories."""
+        if self.process:
+            return
+        root = Path(folder).resolve()
+        excluded = {self.store.root.resolve()}
+        if self.output_edit.text().strip():
+            output = Path(self.output_edit.text()).expanduser().resolve()
+            if output != root:
+                excluded.add(output)
+        paths = []
+        errors = []
+        for directory, dirs, names in os.walk(root, onerror=errors.append):
+            current = Path(directory)
+            if current.resolve() in excluded:
+                dirs[:] = []
+                continue
+            dirs[:] = sorted(d for d in dirs if (current / d).resolve() not in excluded)
+            for name in sorted(names):
+                path = current / name
+                if not name.startswith("~$") and path.suffix.lower() in SUPPORTED:
+                    paths.append(path)
+        if paths:
+            self.add_paths(paths)
+        elif not errors:
+            self.show_status("Không tìm thấy file DOCX, PPTX, XLSX hoặc PDF trong thư mục.")
+        if errors:
+            self.error("\n".join(str(error) for error in errors[:10]))
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls() and not self.process:
             event.acceptProposedAction()
 
     def dropEvent(self, event):
-        self.add_paths([url.toLocalFile() for url in event.mimeData().urls() if url.isLocalFile()])
+        paths = [Path(url.toLocalFile()) for url in event.mimeData().urls() if url.isLocalFile()]
+        for path in paths:
+            if path.is_dir():
+                self.import_folder(path)
+        self.add_paths([path for path in paths if path.is_file()])
 
     def choose_output(self):
-        path = QFileDialog.getExistingDirectory(self, "Thư mục kết quả", self.output_edit.text())
+        path = QFileDialog.getExistingDirectory(
+            self, self.tr("Thư mục kết quả"), self.output_edit.text()
+        )
         if path:
             self.output_edit.setText(path)
 
-    def glossary(self):
+    def glossary_entries(self):
         result = {}
         for row in range(self.glossary_table.rowCount()):
             source = self.glossary_table.item(row, 0)
@@ -378,7 +864,52 @@ class MainWindow(QMainWindow):
                 result[source.text().strip()] = target.text().strip()
         return result
 
+    def glossary(self):
+        return self.glossary_entries() if self.glossary_enabled.isChecked() else {}
+
+    def filter_glossary(self):
+        search = self.glossary_search.text().casefold()
+        for row in range(self.glossary_table.rowCount()):
+            text = " ".join(
+                item.text() for col in range(2)
+                if (item := self.glossary_table.item(row, col)) is not None
+            )
+            self.glossary_table.setRowHidden(row, search not in text.casefold())
+
+    def restore_automotive_glossary(self):
+        if self.process:
+            return
+        present = {
+            item.text().strip() for row in range(self.glossary_table.rowCount())
+            if (item := self.glossary_table.item(row, 0)) is not None
+        }
+        for source, target in default_glossary().items():
+            if source not in present:
+                row = self.glossary_table.rowCount()
+                self.glossary_table.insertRow(row)
+                self.glossary_table.setItem(row, 0, QTableWidgetItem(source))
+                self.glossary_table.setItem(row, 1, QTableWidgetItem(target))
+        self.filter_glossary()
+
+    def show_glossary_sources(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle(self.tr("Nguồn thuật ngữ"))
+        dialog.resize(720, 500)
+        layout = QVBoxLayout(dialog)
+        view = QTextBrowser()
+        view.setOpenExternalLinks(True)
+        note = self.tr("Thuật ngữ Trung được biên soạn cho app; tên tiếng Anh đối chiếu nguồn chính thức Bosch/AUTOSAR.")
+        links = "".join(
+            f'<li><a href="{escape(source["url"], quote=True)}">{escape(source["title"])}</a></li>'
+            for source in automotive_pack()["sources"]
+        )
+        view.setHtml(f"<p>{escape(note)}</p><ul>{links}</ul>")
+        layout.addWidget(view)
+        dialog.exec()
+
     def persist_preferences(self):
+        if not self.save_provider_settings():
+            return False
         try:
             self.preferences.update(
                 {
@@ -386,21 +917,32 @@ class MainWindow(QMainWindow):
                     "mode": self.mode_combo.currentData(),
                     "output_dir": self.output_edit.text(),
                     "ocr_language": self.ocr_language.currentData(),
-                    "glossary": self.glossary(),
+                    "glossary": self.glossary_entries(),
+                    "glossary_enabled": self.glossary_enabled.isChecked(),
+                    "theme": self.theme,
+                    "language": self.language,
+                    "argos_model": self.argos_model_edit.text().strip(),
                 }
             )
             save_preferences(self.preferences)
-            self.statusBar().showMessage("Đã lưu cài đặt.")
+            self.show_status("Đã lưu cài đặt.")
             return True
         except Exception as exc:
             self.error(exc)
             return False
 
     def set_busy(self, busy):
+        self.busy = busy
+        self.start_button.setVisible(not busy)
+        self.pause_button.setVisible(busy)
+        self.progress_bar.setVisible(busy)
+        self.cancel_button.setVisible(busy)
         for button in [
             self.start_button,
             self.export_button,
             self.add_button,
+            self.add_files_action,
+            self.add_folder_action,
             self.delete_button,
             self.review_button,
         ]:
@@ -411,6 +953,12 @@ class MainWindow(QMainWindow):
             self.save_review_button.setEnabled(not busy)
             self.retranslate_button.setEnabled(not busy)
             self.review_table.setEnabled(not busy)
+            self.glossary_table.setEnabled(not busy)
+            self.glossary_enabled.setEnabled(not busy)
+            for button in self.glossary_edit_buttons:
+                button.setEnabled(not busy)
+
+        self.update_selection_actions()
 
     def start_jobs(self, export_only=False):
         if self.process:
@@ -430,7 +978,7 @@ class MainWindow(QMainWindow):
         try:
             if not export_only and self.provider_combo.currentData() == "online":
                 self.profile.validate()
-                if not self.api_key:
+                if self.profile.auth_header and not self.api_key:
                     raise ValueError("Nhập API key trong Cài đặt hoặc chọn Offline.")
             if export_only:
                 for job_id in ids:
@@ -449,6 +997,7 @@ class MainWindow(QMainWindow):
                 "output_dir": self.output_edit.text(),
                 "glossary": self.glossary(),
                 "ocr_language": self.ocr_language.currentData(),
+                "argos_model": self.argos_model_edit.text().strip(),
                 "export_only": export_only,
             }
             self.process = self.context.Process(
@@ -473,14 +1022,14 @@ class MainWindow(QMainWindow):
     def pause_jobs(self):
         if self.pause_event:
             self.pause_event.set()
-            self.statusBar().showMessage(
+            self.show_status(
                 "Sẽ tạm dừng sau request/batch đang xử lý; tiến độ được giữ."
             )
 
     def cancel_jobs(self):
         if self.cancel_event:
             self.cancel_event.set()
-            self.statusBar().showMessage("Đang hủy; bản dịch đã hoàn thành vẫn được giữ.")
+            self.show_status("Đang hủy; bản dịch đã hoàn thành vẫn được giữ.")
 
     def finish_process(self):
         if self.process:
@@ -493,7 +1042,7 @@ class MainWindow(QMainWindow):
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(100)
         self.refresh_jobs()
-        self.statusBar().showMessage("Đã lưu tiến độ. Xem trạng thái và kết quả trong danh sách.")
+        self.show_status("Đã lưu tiến độ. Xem trạng thái và kết quả trong danh sách.")
 
     def poll(self):
         if self.events:
@@ -504,13 +1053,13 @@ class MainWindow(QMainWindow):
                     break
                 if event["kind"] == "progress":
                     self.progress_messages[event["id"]] = event["message"]
-                    self.statusBar().showMessage(event["message"])
+                    self.show_status(event["message"])
                     if event["total"]:
                         self.progress_bar.setRange(0, event["total"])
                         self.progress_bar.setValue(event["done"])
                     self.refresh_jobs()
                 elif event["kind"] == "error":
-                    self.statusBar().showMessage(event["message"])
+                    self.show_status(event["message"])
                 elif event["kind"] == "job_finished":
                     self.progress_messages.pop(event["id"], None)
                     self.refresh_jobs()
@@ -526,7 +1075,7 @@ class MainWindow(QMainWindow):
             except queue.Empty:
                 event = None
             if event:
-                self.key_status.setText(event["message"])
+                self.set_key_status(event["message"])
             if self.connection_process and not self.connection_process.is_alive():
                 self.connection_process.join()
                 self.connection_process = None
@@ -551,7 +1100,7 @@ class MainWindow(QMainWindow):
         self.review_id = job_id
         self.review_doc = doc
         self.review_title.setText(self.store.get(job_id)["name"] + f" · revision {doc.revision}")
-        self.warning_view.setPlainText("\n".join(doc.warnings))
+        self.warning_view.setPlainText("\n".join(self.tr(w) for w in doc.warnings))
         self.review_table.setRowCount(0)
         for segment in doc.segments:
             row = self.review_table.rowCount()
@@ -566,7 +1115,7 @@ class MainWindow(QMainWindow):
             location.setData(Qt.ItemDataRole.UserRole, segment.id)
             source = QTableWidgetItem(segment.source)
             target = QTableWidgetItem(segment.target or "")
-            warning = QTableWidgetItem(segment.warning)
+            warning = QTableWidgetItem(self.tr(segment.warning))
             for item in [location, warning] + ([] if doc.format == "pdf" else [source]):
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             for col, item in enumerate([location, source, target, warning]):
@@ -606,7 +1155,7 @@ class MainWindow(QMainWindow):
                 self.store.revise(self.review_id, targets, sources)
                 self.load_review(self.review_id)
                 self.refresh_jobs()
-            self.statusBar().showMessage("Đã lưu review; xuất lại để nhận file cập nhật.")
+            self.show_status("Đã lưu review; xuất lại để nhận file cập nhật.")
             return True
         except Exception as exc:
             self.error(exc)
@@ -646,7 +1195,7 @@ class MainWindow(QMainWindow):
             )
             self.markdown_preview.setMarkdown(render_markdown(self.review_doc, "assets"))
         else:
-            self.markdown_preview.setPlainText("Markdown preview có sau khi hoàn thành bản dịch.")
+            self.markdown_preview.setPlainText(self.tr("Markdown preview có sau khi hoàn thành bản dịch."))
 
     def preview_pdf_region(self):
         if not self.review_doc or self.review_doc.format != "pdf":
@@ -670,12 +1219,12 @@ class MainWindow(QMainWindow):
             pixmap = QPixmap.fromImage(ImageQt(image))
             self.pdf_preview.setPixmap(pixmap.scaled(320, 300, Qt.AspectRatioMode.KeepAspectRatio))
         except Exception:
-            self.pdf_preview.setText("Không render được trang PDF.")
+            self.pdf_preview.setText(self.tr("Không render được trang PDF."))
 
     def export_report(self):
         if not self.review_id:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Xuất báo cáo", "report.json", "JSON (*.json)")
+        path, _ = QFileDialog.getSaveFileName(self, self.tr("Xuất báo cáo"), "report.json", "JSON (*.json)")
         if path:
             Pipeline(self.store).report(self.review_id, Path(path))
 
@@ -709,9 +1258,9 @@ class MainWindow(QMainWindow):
         self.api_key = self.key_edit.text().strip()
         try:
             set_api_key(self.api_key)
-            self.key_status.setText("Đã lưu key vào kho mật khẩu hệ điều hành.")
+            self.set_key_status("Đã lưu key vào kho mật khẩu hệ điều hành.")
         except Exception:
-            self.key_status.setText(
+            self.set_key_status(
                 "Kho mật khẩu không khả dụng; key chỉ dùng trong phiên hiện tại."
             )
 
@@ -720,12 +1269,14 @@ class MainWindow(QMainWindow):
             set_api_key("")
             self.key_edit.clear()
             self.api_key = ""
-            self.key_status.setText("Đã xóa key.")
+            self.set_key_status("Đã xóa key.")
         except Exception:
             self.error("Không xóa được key trong kho mật khẩu hệ điều hành.")
 
     def test_connection(self):
         if self.connection_process:
+            return
+        if not self.save_provider_settings(True):
             return
         self.connection_events = self.context.Queue()
         self.connection_process = self.context.Process(
@@ -734,12 +1285,12 @@ class MainWindow(QMainWindow):
         )
         self.connection_process.start()
         self.connection_button.setEnabled(False)
-        self.key_status.setText("Đang kiểm tra kết nối…")
+        self.set_key_status("Đang kiểm tra kết nối…")
 
     def closeEvent(self, event):
         if self.process and self.process.is_alive():
             self.pause_jobs()
-            self.statusBar().showMessage(
+            self.show_status(
                 "Đang lưu tiến độ trước khi đóng. Đóng lại sau khi worker dừng."
             )
             event.ignore()

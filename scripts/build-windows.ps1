@@ -41,7 +41,6 @@ try {
     $env:ARGOS_PACKAGES_DIR = $BundleModels
     $env:ARGOS_DEVICE_TYPE = "cpu"
     Invoke-Checked $BuildPython @("-c", "import sys; from argostranslate import package; package.install_from_path(sys.argv[1])", $ModelPath)
-    Invoke-Checked $BuildPython @("-c", "from pathlib import Path; from converter.config import ProviderConfig; ProviderConfig.load(Path('config/provider.json')).validate()")
     $env:CONVERTER_BUNDLE_OFFLINE = "1"
     $env:CONVERTER_BUNDLE_MODELS = $BundleModels
     $env:CONVERTER_BUNDLE_TESSERACT = $TesseractPath

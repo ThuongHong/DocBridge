@@ -66,6 +66,8 @@ class Pipeline:
                 "Provider/model/glossary đã đổi. Tạo job mới để dịch; bản review cũ được giữ."
             )
         self.store.update(job_id, status="translating", profile=profile, error="")
+        if hasattr(provider, "set_control"):
+            provider.set_control(self.control)
         if not doc.segments:
             raise ValueError("Không trích xuất được text. Hãy kiểm tra file hoặc kết quả OCR.")
         pending = [s for s in doc.segments if s.target is None]
@@ -84,7 +86,11 @@ class Pipeline:
             self.control()
             # Extremely long XML text nodes are split for translation, not for Office mapping.
             result = {}
-            normal = [s for s in batch if len(s.source) <= provider.batch_chars // 2]
+            normal = [
+                s for s in batch
+                if getattr(provider, "handles_long_segments", False)
+                or len(s.source) <= provider.batch_chars // 2
+            ]
             if normal:
                 result.update(provider.translate(normal, glossary))
             for segment in batch:

@@ -1,0 +1,675 @@
+{
+  "version": 1,
+  "title": "Bosch automotive and AUTOSAR — Chinese to English",
+  "sources": [
+    {
+      "id": "bosch-safety",
+      "title": "Bosch Mobility — Driving safety",
+      "url": "https://www.bosch-mobility.com/en/solutions/driving-safety/"
+    },
+    {
+      "id": "bosch-esp",
+      "title": "Bosch Mobility — Electronic stability program",
+      "url": "https://www.bosch-mobility.com/en/solutions/driving-safety/electronic-stability-program/"
+    },
+    {
+      "id": "bosch-sensors",
+      "title": "Bosch Mobility — Sensors",
+      "url": "https://www.bosch-mobility.com/en/solutions/sensors/"
+    },
+    {
+      "id": "bosch-by-wire",
+      "title": "Bosch Mobility — Brake-by-wire",
+      "url": "https://www.bosch-mobility.com/en/solutions/driving-safety/brake-by-wire/"
+    },
+    {
+      "id": "autosar-cp",
+      "title": "AUTOSAR — Classic Platform",
+      "url": "https://www.autosar.org/standards/classic-platform/"
+    },
+    {
+      "id": "autosar-vfb",
+      "title": "AUTOSAR — Virtual Functional Bus, R23-11",
+      "url": "https://www.autosar.org/fileadmin/standards/R23-11/CP/AUTOSAR_CP_EXP_VFB.pdf"
+    },
+    {
+      "id": "autosar-j1939",
+      "title": "AUTOSAR — SAE J1939 Diagnostic Communication Manager, R25-11",
+      "url": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_SAEJ1939DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "id": "autosar-dcm",
+      "title": "AUTOSAR — Diagnostic Communication Manager, R24-11",
+      "url": "https://www.autosar.org/fileadmin/standards/R24-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "id": "autosar-cantp",
+      "title": "AUTOSAR — CAN Transport Layer, R23-11",
+      "url": "https://www.autosar.org/fileadmin/standards/R23-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf"
+    },
+    {
+      "id": "autosar-com",
+      "title": "AUTOSAR — Communication, R19-11",
+      "url": "https://www.autosar.org/fileadmin/standards/R19-11/CP/AUTOSAR_SWS_COM.pdf"
+    },
+    {
+      "id": "autosar-nvm",
+      "title": "AUTOSAR — NVRAM Manager, R24-11",
+      "url": "https://www.autosar.org/fileadmin/standards/R24-11/CP/AUTOSAR_CP_SWS_NVRAMManager.pdf"
+    },
+    {
+      "id": "autosar-wdgm",
+      "title": "AUTOSAR — Watchdog Manager, R24-11",
+      "url": "https://www.autosar.org/fileadmin/standards/R24-11/CP/AUTOSAR_CP_SWS_WatchdogManager.pdf"
+    },
+    {
+      "id": "autosar-ap-wg",
+      "title": "AUTOSAR — Adaptive Platform working groups",
+      "url": "https://www.autosar.org/working-groups/adaptive-platform"
+    },
+    {
+      "id": "autosar-ap-design",
+      "title": "AUTOSAR — Adaptive Platform Design, R20-11",
+      "url": "https://www.autosar.org/fileadmin/standards/R20-11/AP/AUTOSAR_EXP_PlatformDesign.pdf"
+    },
+    {
+      "id": "autosar-phm",
+      "title": "AUTOSAR — Platform Health Management, R24-11",
+      "url": "https://www.autosar.org/fileadmin/standards/R24-11/AP/AUTOSAR_AP_SWS_PlatformHealthManagement.pdf"
+    },
+    {
+      "id": "autosar-catalog",
+      "title": "AUTOSAR — Official document catalog",
+      "url": "https://www.autosar.org/search/"
+    },
+    {
+      "id": "autosar-cross-standard",
+      "title": "AUTOSAR — Cross-Standard working groups",
+      "url": "https://www.autosar.org/working-groups/cross-standard"
+    }
+  ],
+  "terms": [
+    {
+      "source": "防抱死制动系统",
+      "target": "Antilock Braking System (ABS)",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "防抱死刹车系统",
+      "target": "Antilock Braking System (ABS)",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "电子稳定程序",
+      "target": "Electronic Stability Program (ESP)",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "再生制动系统",
+      "target": "Regenerative Braking System",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "真空制动助力器",
+      "target": "Vacuum Brake Booster",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "真空刹车助力器",
+      "target": "Vacuum Brake Booster",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "机电制动助力器",
+      "target": "Electromechanical Brake Booster",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "集成式动力制动系统",
+      "target": "Integrated Power Brake",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "摩托车稳定控制系统",
+      "target": "Motorcycle Stability Control (MSC)",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "乘员保护系统",
+      "target": "Occupant Protection System",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "行人保护系统",
+      "target": "Pedestrian Protection System",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "串联制动主缸",
+      "target": "Tandem Master Cylinder",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "半主动阻尼控制系统",
+      "target": "Semi-active Damping Control System",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "制动力分配",
+      "target": "Brake-force Distribution",
+      "domain": "Bosch driving safety",
+      "source_id": "bosch-safety"
+    },
+    {
+      "source": "牵引力控制系统",
+      "target": "Traction Control System",
+      "domain": "Bosch vehicle dynamics",
+      "source_id": "bosch-esp"
+    },
+    {
+      "source": "横摆角速度传感器",
+      "target": "Yaw-rate Sensor",
+      "domain": "Bosch vehicle dynamics",
+      "source_id": "bosch-esp"
+    },
+    {
+      "source": "横向加速度",
+      "target": "Lateral Acceleration",
+      "domain": "Bosch vehicle dynamics",
+      "source_id": "bosch-esp"
+    },
+    {
+      "source": "坡道起步辅助",
+      "target": "Hill Hold Control",
+      "domain": "Bosch vehicle dynamics",
+      "source_id": "bosch-esp"
+    },
+    {
+      "source": "轮速传感器",
+      "target": "Wheel-speed Sensor",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "转向角传感器",
+      "target": "Steering-angle Sensor",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "凸轮轴位置传感器",
+      "target": "Camshaft Position Sensor",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "曲轴转速传感器",
+      "target": "Crankshaft Speed Sensor",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "制动片磨损传感器",
+      "target": "Brake Pad Wear Sensor",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "电子电池传感器",
+      "target": "Electronic Battery Sensor (EBS)",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "压差传感器",
+      "target": "Differential Pressure Sensor",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "转子位置传感器",
+      "target": "Rotor Position Sensor",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "超声波传感器",
+      "target": "Ultrasonic Sensor",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "雷达传感器",
+      "target": "Radar Sensor",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "传感器数据融合",
+      "target": "Sensor Data Fusion",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "车辆定位系统",
+      "target": "Vehicle Localization System",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "宽带氧传感器",
+      "target": "Wideband Lambda Sensor",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "氮氧化物传感器",
+      "target": "NOx Sensor",
+      "domain": "Bosch automotive sensors",
+      "source_id": "bosch-sensors"
+    },
+    {
+      "source": "线控制动",
+      "target": "Brake-by-wire",
+      "domain": "Bosch braking",
+      "source_id": "bosch-by-wire"
+    },
+    {
+      "source": "线控制动执行器",
+      "target": "By-wire Brake Actuator",
+      "domain": "Bosch braking",
+      "source_id": "bosch-by-wire"
+    },
+    {
+      "source": "线控制动踏板",
+      "target": "By-wire Brake Pedal",
+      "domain": "Bosch braking",
+      "source_id": "bosch-by-wire"
+    },
+    {
+      "source": "制动踏板",
+      "target": "Brake Pedal",
+      "domain": "Bosch braking",
+      "source_id": "bosch-by-wire"
+    },
+    {
+      "source": "液压制动",
+      "target": "Hydraulic Braking",
+      "domain": "Bosch braking",
+      "source_id": "bosch-by-wire"
+    },
+    {
+      "source": "紧急制动辅助",
+      "target": "Emergency Brake Assist",
+      "domain": "Bosch braking",
+      "source_id": "bosch-by-wire"
+    },
+    {
+      "source": "AUTOSAR经典平台",
+      "target": "AUTOSAR Classic Platform (CP)",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "经典AUTOSAR平台",
+      "target": "AUTOSAR Classic Platform (CP)",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "电子控制单元",
+      "target": "Electronic Control Unit (ECU)",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "运行时环境",
+      "target": "Runtime Environment (RTE)",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "基础软件",
+      "target": "Basic Software (BSW)",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "基本软件",
+      "target": "Basic Software (BSW)",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "应用软件组件",
+      "target": "Application Software Component (SWC)",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "虚拟功能总线",
+      "target": "Virtual Functional Bus (VFB)",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "ECU抽象层",
+      "target": "ECU Abstraction Layer",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "通信硬件抽象",
+      "target": "Communication Hardware Abstraction",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "存储器硬件抽象",
+      "target": "Memory Hardware Abstraction",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "板载设备抽象",
+      "target": "Onboard Device Abstraction",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "微控制器驱动",
+      "target": "Microcontroller Drivers",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "通信驱动",
+      "target": "Communication Drivers",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "存储器驱动",
+      "target": "Memory Drivers",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "复杂驱动",
+      "target": "Complex Drivers",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-cp"
+    },
+    {
+      "source": "微控制器抽象层",
+      "target": "Microcontroller Abstraction Layer (MCAL)",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-vfb"
+    },
+    {
+      "source": "数字输入输出",
+      "target": "Digital Input/Output",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-vfb"
+    },
+    {
+      "source": "模数转换器",
+      "target": "Analog/Digital Converter",
+      "domain": "AUTOSAR Classic",
+      "source_id": "autosar-vfb"
+    },
+    {
+      "source": "诊断事件管理器",
+      "target": "Diagnostic Event Manager (DEM)",
+      "domain": "AUTOSAR diagnostics and communication",
+      "source_id": "autosar-j1939"
+    },
+    {
+      "source": "通信管理器",
+      "target": "Communication Manager (ComM)",
+      "domain": "AUTOSAR diagnostics and communication",
+      "source_id": "autosar-j1939"
+    },
+    {
+      "source": "协议数据单元路由器",
+      "target": "PDU Router (PduR)",
+      "domain": "AUTOSAR diagnostics and communication",
+      "source_id": "autosar-j1939"
+    },
+    {
+      "source": "PDU路由器",
+      "target": "PDU Router (PduR)",
+      "domain": "AUTOSAR diagnostics and communication",
+      "source_id": "autosar-j1939"
+    },
+    {
+      "source": "协议数据单元",
+      "target": "Protocol Data Unit (PDU)",
+      "domain": "AUTOSAR diagnostics and communication",
+      "source_id": "autosar-j1939"
+    },
+    {
+      "source": "诊断故障码",
+      "target": "Diagnostic Trouble Code (DTC)",
+      "domain": "AUTOSAR diagnostics and communication",
+      "source_id": "autosar-j1939"
+    },
+    {
+      "source": "ECU状态管理器",
+      "target": "ECU State Manager (EcuM)",
+      "domain": "AUTOSAR diagnostics and communication",
+      "source_id": "autosar-j1939"
+    },
+    {
+      "source": "默认错误追踪器",
+      "target": "Default Error Tracer (DET)",
+      "domain": "AUTOSAR diagnostics and communication",
+      "source_id": "autosar-j1939"
+    },
+    {
+      "source": "默认错误跟踪器",
+      "target": "Default Error Tracer (DET)",
+      "domain": "AUTOSAR diagnostics and communication",
+      "source_id": "autosar-j1939"
+    },
+    {
+      "source": "基础软件模式管理器",
+      "target": "Basic Software Mode Manager (BswM)",
+      "domain": "AUTOSAR diagnostics and communication",
+      "source_id": "autosar-j1939"
+    },
+    {
+      "source": "基本软件模式管理器",
+      "target": "Basic Software Mode Manager (BswM)",
+      "domain": "AUTOSAR diagnostics and communication",
+      "source_id": "autosar-j1939"
+    },
+    {
+      "source": "诊断通信管理器",
+      "target": "Diagnostic Communication Manager (DCM)",
+      "domain": "AUTOSAR diagnostics",
+      "source_id": "autosar-dcm"
+    },
+    {
+      "source": "统一诊断服务",
+      "target": "Unified Diagnostic Services (UDS)",
+      "domain": "AUTOSAR diagnostics",
+      "source_id": "autosar-dcm"
+    },
+    {
+      "source": "CAN传输层",
+      "target": "CAN Transport Layer (CanTp)",
+      "domain": "AUTOSAR communication",
+      "source_id": "autosar-cantp"
+    },
+    {
+      "source": "CAN接口",
+      "target": "CAN Interface (CanIf)",
+      "domain": "AUTOSAR communication",
+      "source_id": "autosar-cantp"
+    },
+    {
+      "source": "控制器局域网",
+      "target": "Controller Area Network (CAN)",
+      "domain": "AUTOSAR communication",
+      "source_id": "autosar-cantp"
+    },
+    {
+      "source": "AUTOSAR通信模块",
+      "target": "AUTOSAR COM Module",
+      "domain": "AUTOSAR communication",
+      "source_id": "autosar-com"
+    },
+    {
+      "source": "非易失性存储管理器",
+      "target": "NVRAM Manager (NvM)",
+      "domain": "AUTOSAR memory",
+      "source_id": "autosar-nvm"
+    },
+    {
+      "source": "NVRAM管理器",
+      "target": "NVRAM Manager (NvM)",
+      "domain": "AUTOSAR memory",
+      "source_id": "autosar-nvm"
+    },
+    {
+      "source": "看门狗管理器",
+      "target": "Watchdog Manager (WdgM)",
+      "domain": "AUTOSAR supervision",
+      "source_id": "autosar-wdgm"
+    },
+    {
+      "source": "存活监督",
+      "target": "Alive Supervision",
+      "domain": "AUTOSAR supervision",
+      "source_id": "autosar-wdgm"
+    },
+    {
+      "source": "截止时间监督",
+      "target": "Deadline Supervision",
+      "domain": "AUTOSAR supervision",
+      "source_id": "autosar-wdgm"
+    },
+    {
+      "source": "逻辑监督",
+      "target": "Logical Supervision",
+      "domain": "AUTOSAR supervision",
+      "source_id": "autosar-wdgm"
+    },
+    {
+      "source": "AUTOSAR自适应平台",
+      "target": "AUTOSAR Adaptive Platform (AP)",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-ap-wg"
+    },
+    {
+      "source": "自适应AUTOSAR平台",
+      "target": "AUTOSAR Adaptive Platform (AP)",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-ap-wg"
+    },
+    {
+      "source": "应用健康监控",
+      "target": "Application Health Monitoring",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-ap-wg"
+    },
+    {
+      "source": "键值存储",
+      "target": "Key-Value Storage",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-ap-wg"
+    },
+    {
+      "source": "执行管理",
+      "target": "Execution Management",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-ap-design"
+    },
+    {
+      "source": "机器清单",
+      "target": "Machine Manifest",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-ap-design"
+    },
+    {
+      "source": "执行清单",
+      "target": "Execution Manifest",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-ap-design"
+    },
+    {
+      "source": "功能组状态",
+      "target": "Function Group States",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-ap-design"
+    },
+    {
+      "source": "确定性执行",
+      "target": "Deterministic Execution",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-ap-design"
+    },
+    {
+      "source": "平台健康管理",
+      "target": "Platform Health Management (PHM)",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-phm"
+    },
+    {
+      "source": "更新和配置管理",
+      "target": "Update and Configuration Management (UCM)",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-phm"
+    },
+    {
+      "source": "日志与跟踪",
+      "target": "Log and Trace",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-phm"
+    },
+    {
+      "source": "日志和追踪",
+      "target": "Log and Trace",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-phm"
+    },
+    {
+      "source": "时间同步",
+      "target": "Time Synchronization",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-phm"
+    },
+    {
+      "source": "持久化存储",
+      "target": "Persistency",
+      "domain": "AUTOSAR Adaptive",
+      "source_id": "autosar-catalog"
+    },
+    {
+      "source": "软件组件模板",
+      "target": "Software Component Template",
+      "domain": "AUTOSAR methodology",
+      "source_id": "autosar-cross-standard"
+    },
+    {
+      "source": "ECU配置模板",
+      "target": "ECU Configuration Template",
+      "domain": "AUTOSAR methodology",
+      "source_id": "autosar-cross-standard"
+    }
+  ]
+}

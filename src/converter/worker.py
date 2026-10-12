@@ -22,7 +22,7 @@ def run_jobs(root: str, job_ids: list[str], options: dict, api_key: str, queue, 
     try:
         if not options.get("export_only"):
             provider = (
-                ArgosProvider()
+                ArgosProvider(options.get("argos_model") or None)
                 if options["provider"] == "offline"
                 else OnlineProvider(ProviderConfig(**options["profile"]), api_key)
             )

@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 import os
 import sys
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 from .models import atomic_text
 
@@ -33,24 +34,35 @@ class ProviderConfig:
     max_output_tokens: int = 4096
     timeout_seconds: int = 120
     retries: int = 3
+    context_window_tokens: int = 8192
+    token_safety_margin: int = 512
 
     @classmethod
     def load(cls, path: Path | None = None) -> ProviderConfig:
         override = os.environ.get("CONVERTER_PROVIDER_CONFIG")
         default = resource_root() / "config/provider.json"
         local = resource_root() / "config/provider.local.json"
-        selected = path or (Path(override) if override else local if local.exists() else default)
+        saved = data_root() / "provider.json"
+        selected = path or (
+            saved if saved.exists()
+            else Path(override) if override
+            else local if local.exists() else default
+        )
         data = json.loads(selected.read_text(encoding="utf-8")) if selected.exists() else {}
         return cls(**data)
 
-    def validate(self) -> None:
-        from urllib.parse import urlsplit
+    def save(self) -> None:
+        # API keys are deliberately absent from this dataclass and file.
+        atomic_text(data_root() / "provider.json", json.dumps(asdict(self), indent=2))
 
+    def validate(self) -> None:
         parsed = urlsplit(self.endpoint)
         if not self.endpoint or not self.model:
             raise ValueError(
-                "Chưa cấu hình dịch vụ online. Nhà phát triển cần điền endpoint và model."
+                "Nhập API URL và model trong Cài đặt."
             )
+        if not parsed.hostname or parsed.fragment:
+            raise ValueError("API URL không hợp lệ.")
         if parsed.scheme != "https" and not (
             parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1", "::1"}
         ):
@@ -59,6 +71,28 @@ class ProviderConfig:
             raise ValueError("Endpoint phải là URL đầy đủ tới /v1/chat/completions.")
         if self.batch_chars < 100 or self.retries < 0:
             raise ValueError("Cấu hình batch/retry không hợp lệ.")
+        if self.max_output_tokens < 1 or self.timeout_seconds < 1:
+            raise ValueError("Giới hạn token và timeout phải lớn hơn 0.")
+        if self.token_safety_margin < 0 or (
+            self.context_window_tokens - self.max_output_tokens - self.token_safety_margin < 1024
+        ):
+            raise ValueError("Context window phải đủ chứa token đầu ra, dự phòng và ít nhất 1024 token đầu vào.")
+        if any(c in self.auth_header for c in "\r\n: "):
+            raise ValueError("Tên header xác thực không hợp lệ.")
+        if any(c in self.auth_prefix for c in "\r\n"):
+            raise ValueError("Prefix xác thực không hợp lệ.")
+
+
+def normalize_endpoint(value: str) -> str:
+    """Accept a service root, versioned base URL or full Chat Completions endpoint."""
+    value = value.strip()
+    if not value:
+        return ""
+    parsed = urlsplit(value)
+    path = parsed.path.rstrip("/")
+    if not path.endswith("/chat/completions"):
+        path += "/chat/completions" if path else "/v1/chat/completions"
+    return urlunsplit((parsed.scheme, parsed.netloc, path, parsed.query, parsed.fragment))
 
 
 def load_preferences() -> dict:

@@ -6,10 +6,13 @@ với model/OCR bundle và dịch vụ online thật cần chạy tại môi tr�
 
 ## 1. Yêu cầu đã chốt
 
-- Ứng dụng desktop Windows, ưu tiên Windows 10/11 x64.
+- Ứng dụng desktop Windows, ưu tiên Windows 10/11 x64; có build Linux x86_64.
 - Hướng dịch chính: Trung → Anh. Có fixture riêng cho giản thể và phồn thể.
-- Nguồn dịch chính: một endpoint dạng `/v1/chat/completions` và model ID do nhà phát triển cấu hình sẵn.
-  Người dùng chỉ nhập API key; không phải cấu hình base URL hay chọn model.
+- Nguồn dịch online: dịch vụ OpenAI-compatible Chat Completions. Người dùng chỉnh
+  API URL, model ID, header/prefix xác thực, timeout, retry và batch/token trong Settings.
+- UI mặc định sáng và English; có chuyển tối/Tiếng Việt, lưu lựa chọn giữa các phiên.
+- Nút Add folder quét thư mục con và nhập DOCX/PPTX/XLSX/PDF; bỏ file khóa Office.
+- Glossary có 97 thuật ngữ automotive/Bosch/AUTOSAR có nguồn, cho sửa và bật/tắt.
 - Model offline đã chọn: file `translate-zh_en-1_9.argosmodel` người dùng đang có,
   chạy Trung → Anh trên CPU. Người dùng đã xác nhận dùng Argos là phù hợp; không
   cần đánh giá lại model trước triển khai.
@@ -30,9 +33,9 @@ với model/OCR bundle và dịch vụ online thật cần chạy tại môi tr�
 Repository ban đầu chỉ có README. Implementation mới dùng dataclasses cho
 document model, pdfplumber để đọc bảng PDF, và giữ nguyên kiến trúc PySide6 +
 worker process + SQLite. Hướng dẫn chạy/build và giới hạn cụ thể nằm trong README.
-API path đã xác định là `/v1/chat/completions`. Host/base URL, model ID, cơ chế
-xác thực và mức tương thích schema OpenAI còn chờ thông tin. Các phần khác của
-thiết kế không phụ thuộc việc đã chốt URL cụ thể hay chưa.
+API dùng endpoint `/chat/completions`; base URL được chuẩn hóa trước khi lưu.
+Người dùng chọn URL/model và cơ chế xác thực. Tích hợp dịch vụ thật cần kiểm tra
+response theo schema Chat Completions.
 
 ## 2. Lựa chọn kiến trúc
 
@@ -44,7 +47,7 @@ Chọn Python 3.12 + PySide6 Widgets, worker process, SQLite và adapter tài li
 | Preview nội dung | QTextBrowser / bảng / ảnh trang PDF | Tránh phụ thuộc QtWebEngine trong gói đầu |
 | Pipeline | Python, Pydantic, worker process | Tách UI khỏi OCR, parsing và inference |
 | Office | ZIP + lxml; adapter OOXML riêng | Giữ phần không thay đổi của file gốc |
-| Online | HTTP client qua provider adapter | Endpoint/model cố định, chỉ nhận key từ UI |
+| Online | HTTP client qua provider adapter | URL/model và xác thực chỉnh trực tiếp trong Settings |
 | Offline | Argos provider dùng `translate-zh_en-1_9.argosmodel` | Lựa chọn đã chốt theo xác nhận của người dùng |
 | PDF đọc/render | pdfminer.six + pypdfium2 | Text có vị trí và render để preview/OCR |
 | PDF → DOCX | python-docx cho file dựng mới | Tách khỏi adapter patch Office gốc; độ trung thực bố cục cần kiểm chứng |
@@ -118,14 +121,15 @@ thiết, provider/model, ngôn ngữ, glossary và prompt version; không chỉ 
 
 ## 4. Giao diện và hành vi
 
-Điều hướng gồm: Tài liệu, Review, Lịch sử, Thuật ngữ, Cài đặt.
+Điều hướng gồm: Documents & history, Review và Glossary. Nút bánh răng mở hộp
+Settings gồm General, Online service và Offline & OCR.
 
 Màn hình Tài liệu:
 
 ```text
 Converter                                          Cài đặt
 ---------------------------------------------------------
-[ Thêm file ]   hoặc kéo thả DOCX / PPTX / XLSX / PDF
+[ Add documents ▼ ] [ ⋯ ] hoặc kéo thả DOCX / PPTX / XLSX / PDF
 
 Tên file            Loại      Tiến độ        Kết quả
 contract.docx       Word      Chờ dịch
@@ -136,7 +140,7 @@ Chế độ: [ Dịch online v ]   [ Thuật ngữ: Mặc định v ]
 Xuất:   ( ) Chỉ Office    ( ) Chỉ Markdown    (o) Cả hai
 Lưu vào: D:\Translations                  [ Chọn thư mục ]
 
-[ Bắt đầu dịch ]                  [ Tạm dừng ] [ Hủy ]
+                                  [ Translate / Resume ]
 ```
 
 Tên provider hiển thị thân thiện, không hiện chi tiết endpoint/model trong luồng
@@ -150,9 +154,9 @@ báo rõ theo từng file trước khi dịch, không âm thầm đổi lựa ch
 Với PDF, UI ghi rõ “Office (.docx dựng lại)” bên cạnh lựa chọn; batch có cả Office
 và PDF hiển thị định dạng đích ở từng hàng để người dùng biết file sẽ nhận được.
 
-Cài đặt lần đầu chỉ cần:
+Cài đặt dịch vụ lần đầu:
 
-1. Nhập API key vào ô che ký tự.
+1. Nhập API URL (base hoặc endpoint đầy đủ), model ID và API key nếu cần xác thực.
 2. Bấm Kiểm tra kết nối. Chỉ dùng request không chứa tài liệu; nếu cần gọi model
    để xác minh quyền thì dùng một câu thử ngắn và thông báo request có thể tính phí.
 3. Lưu key vào Windows Credential Manager; cho phép thay/xóa key.
@@ -191,10 +195,10 @@ Không xuất API key hay nội dung prompt có key trong report.
 
 ## 5. Dịch online
 
-Endpoint/model ID nằm trong provider profile do nhà phát triển đóng gói.
-Trong bản đầu không có UI nhập endpoint tùy ý. API key không được đóng gói.
-Adapter chính dùng Chat Completions với `model` và `messages`, gọi path đã chốt
-`/v1/chat/completions`. Xác minh response theo OpenAI-compatible schema khi tích
+Endpoint/model ID nằm trong provider profile người dùng chỉnh trong Settings;
+profile được lưu vào thư mục dữ liệu app và không chứa API key. Bản đóng gói chỉ
+cung cấp giá trị ban đầu. Có thể tắt xác thực cho dịch vụ không cần key.
+Adapter dùng Chat Completions với `model` và `messages`. Xác minh response theo OpenAI-compatible schema khi tích
 hợp endpoint thật; path giống nhau chưa đủ chứng minh mọi feature đều tương thích.
 Không phụ thuộc structured-output mode hoặc streaming nếu endpoint chưa hỗ trợ;
 bản đầu dùng request không streaming và kiểm tra nội dung response. Không giả
@@ -408,8 +412,8 @@ tiên là dựng khung ứng dụng, tích hợp Argos và làm pipeline tài li
 
 ## 13. Thông tin còn cần cho implementation
 
-- Host/base URL, model ID, auth schema, context limits và rate limits; API path
-  `/v1/chat/completions` đã được người dùng xác định.
+- URL/model, xác thực và giới hạn của dịch vụ thật do người dùng nhập trong Settings;
+  cần kiểm tra kết nối trước khi xử lý tài liệu thật.
 - Fixture tài liệu zh-en để kiểm tra extraction, OCR, bảo toàn format và xuất file.
 - File `translate-zh_en-1_9.argosmodel` được đưa vào assets ở bước implementation/
   đóng gói; không cần cung cấp để tiếp tục chốt thiết kế hoặc đánh giá model.
@@ -427,3 +431,43 @@ Không cần cung cấp API key trong chat. Người dùng nhập key vào ứng
 - https://github.com/argosopentech/argos-translate/blob/v1.9.6/argostranslate/package.py
 - https://github.com/argosopentech/argospm-index/blob/main/index.json
 - https://github.com/pymupdf/PyMuPDF
+
+## 14. Model và glossary người dùng
+
+Settings → Offline & OCR có link [Argos Translate Package Index](https://www.argosopentech.com/argospm/index/)
+và chọn file `.argosmodel` Trung → Anh. Model được chọn dùng cache riêng theo
+hash nội dung để không bị model cũ trong bundle ghi đè. Hash vào profile job;
+đổi model cần job mới. Không tải model tự động.
+
+Glossary dùng bộ thuật ngữ biên soạn cho app, đối chiếu tên tiếng Anh với nguồn
+chính thức Bosch/AUTOSAR. Nguồn nằm trong `docs/GLOSSARY_SOURCES.md`.
+Thuật ngữ người dùng ghi đè mục mặc định cùng nguồn; việc xóa được lưu qua restart.
+Khôi phục chỉ thêm mục còn thiếu; tắt áp dụng không xóa bảng.
+
+## 15. Giới hạn context của LLM
+
+Settings có context window và token dự phòng theo model do người dùng cấu hình.
+Ngân sách input = context window − max output tokens − safety margin. UI không
+khẳng định đã tự phát hiện giới hạn/tokenizer của provider. Ước lượng bảo thủ dùng
+byte UTF-8 của messages đã serialize, kể cả system prompt, JSON và context.
+
+Online provider tự chia batch trước khi gửi; đoạn quá dài bỏ context phụ rồi chia
+nguồn đầy đủ ở ranh giới an toàn, không cắt thuật ngữ/mã/số/URL. Lỗi context HTTP
+400 được nhận diện, HTTP 413 và output bị cắt (`finish_reason=length`) dẫn tới chia
+nhỏ tiếp. Lỗi HTTP khác dùng cơ chế retry hiện có. Không lưu JSON dở; toàn bộ IDs
+và placeholders phải được kiểm tra trước checkpoint. Không chia được nữa thì báo
+lỗi cấu hình có thể xử lý. Pause/cancel được kiểm tra giữa các request nhỏ.
+
+## 16. Giao diện gọn và kiểm tra offline thực tế
+
+Settings dùng icon bánh răng 18 px trong vùng bấm 28 px, tự đổi màu theo palette.
+Màn hình chính có Add documents với menu Add folder, menu ⋯ chứa Review/Open output/
+Re-export/Remove history, và một hành động chính Translate / Resume. Khi chạy,
+hành động chính đổi thành Pause; Cancel chỉ xuất hiện trong menu ⋯ khi có worker.
+Double-click mở Review. Chọn thư mục output bằng icon trong ô đường dẫn. Khi chưa
+có tài liệu, màn hình hiển thị hướng dẫn kéo thả thay vì bảng trống.
+
+Model Argos zh-en 1.9 đã tải và chạy thật trên CPU, với kết nối Python bị chặn.
+DOCX/PPTX/XLSX/PDF text/PDF scan xuất được cả Office và Markdown. Runtime/model đã
+được nhúng vào bản Linux và kiểm tra inference bằng executable. Kết quả cụ thể,
+bao gồm lỗi ngữ nghĩa của model và OCR, nằm trong `docs/OFFLINE_SMOKE.md`.

@@ -1,4 +1,4 @@
-# Build on Windows using scripts/build-windows.ps1.
+# Windows uses scripts/build-windows.ps1; Linux sets the same bundle environment paths.
 import os
 import sys
 from pathlib import Path
@@ -10,6 +10,7 @@ datas = [(str(root / "config/provider.json"), "config")]
 hidden = ["keyring.backends.Windows"] if sys.platform == "win32" else []
 binaries = []
 datas += collect_data_files("docx")
+datas += collect_data_files("converter", includes=["data/*.json"])
 if os.environ.get("CONVERTER_BUNDLE_OFFLINE", "1") == "1":
     for module in ["argostranslate", "ctranslate2", "sentencepiece", "stanza"]:
         module_datas, module_binaries, module_hidden = collect_all(module)

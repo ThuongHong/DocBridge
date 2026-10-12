@@ -11,7 +11,8 @@ from pathlib import Path
 import httpx
 
 from .config import ProviderConfig, data_root, resource_root
-from .models import Segment
+from .llm_budget import estimate_input_tokens, join_translations, split_source
+from .models import Segment, file_hash
 
 # URLs, product codes and numeric values must survive translation unchanged.
 PROTECTED = re.compile(
@@ -26,6 +27,15 @@ class TranslationError(RuntimeError):
     pass
 
 
+class ContextLimitError(TranslationError):
+    """A request needs splitting; raw provider responses are never exposed."""
+
+
+def protection_pattern(glossary: dict) -> re.Pattern:
+    alternatives = [re.escape(key) for key in sorted(glossary, key=len, reverse=True) if key]
+    return re.compile("|".join(alternatives + [PROTECTED.pattern]))
+
+
 def signature(kind: str, profile: dict, glossary: dict) -> str:
     payload = json.dumps(
         {"kind": kind, "profile": profile, "glossary": glossary, "prompt_version": 1},
@@ -37,8 +47,7 @@ def signature(kind: str, profile: dict, glossary: dict) -> str:
 
 def protect(source: str, glossary: dict) -> tuple[str, dict[str, str]]:
     terms = {key: value for key, value in glossary.items() if key}
-    alternatives = [re.escape(key) for key in sorted(terms, key=len, reverse=True)]
-    pattern = re.compile("|".join(alternatives + [PROTECTED.pattern]))
+    pattern = protection_pattern(terms)
     values = {}
     # Do not collide with literal placeholder-looking text in an input document.
     prefix = "__CVT_"
@@ -66,15 +75,21 @@ def restore(target: str, values: dict) -> str:
 
 
 class OnlineProvider:
+    handles_long_segments = True
+
     def __init__(self, config: ProviderConfig, api_key: str, client=None, sleep=time.sleep):
         config.validate()
-        if not api_key:
+        if config.auth_header and not api_key:
             raise TranslationError("Chưa nhập API key. Mở Cài đặt hoặc chọn Offline.")
         self.config = config
         self.api_key = api_key
         self.client = client or httpx.Client(timeout=config.timeout_seconds)
         self.sleep = sleep
         self.batch_chars = config.batch_chars
+        self.control = lambda: None
+
+    def set_control(self, control):
+        self.control = control
 
     def fingerprint(self, glossary: dict) -> str:
         return signature("online", asdict(self.config), glossary)
@@ -85,10 +100,14 @@ class OnlineProvider:
     def request(self, messages: list[dict]) -> str:
         config = self.config
         for attempt in range(config.retries + 1):
+            self.control()
             try:
                 response = self.client.post(
                     config.endpoint,
-                    headers={config.auth_header: config.auth_prefix + self.api_key},
+                    headers=(
+                        {config.auth_header: config.auth_prefix + self.api_key}
+                        if config.auth_header else {}
+                    ),
                     json={
                         "model": config.model,
                         "messages": messages,
@@ -105,6 +124,22 @@ class OnlineProvider:
                 continue
             if response.status_code in {401, 403}:
                 raise TranslationError("API key không hợp lệ hoặc chưa có quyền dùng model.")
+            if response.status_code == 413:
+                raise ContextLimitError("Request vượt giới hạn context; cần chia nhỏ.")
+            if response.status_code == 400:
+                try:
+                    error = response.json().get("error", {})
+                    code = str(error.get("code") or error.get("type", "")).lower() if isinstance(error, dict) else ""
+                    message = str(error.get("message", "")).lower() if isinstance(error, dict) else str(error).lower()
+                except (ValueError, AttributeError):
+                    code, message = "", ""
+                if code in {"context_length_exceeded", "context_window_exceeded", "too_many_tokens"} or any(
+                    phrase in message for phrase in (
+                        "maximum context length", "context window", "context length exceeded",
+                        "too many tokens", "input is too long",
+                    )
+                ):
+                    raise ContextLimitError("Request vượt giới hạn context; cần chia nhỏ.")
             if response.status_code == 429 or response.status_code >= 500:
                 if attempt == config.retries:
                     raise TranslationError(
@@ -122,8 +157,8 @@ class OnlineProvider:
             try:
                 choice = response.json()["choices"][0]
                 if choice.get("finish_reason") == "length":
-                    raise TranslationError(
-                        "Response bị cắt ngắn. Nhà phát triển cần giảm batch hoặc tăng giới hạn token."
+                    raise ContextLimitError(
+                        "Response bị cắt ngắn. Giảm batch hoặc tăng giới hạn token trong Cài đặt."
                     )
                 value = choice["message"]["content"]
                 if not isinstance(value, str) or not value.strip():
@@ -136,6 +171,46 @@ class OnlineProvider:
         raise TranslationError("Không nhận được bản dịch.")
 
     def translate(self, segments: list[Segment], glossary: dict) -> dict[str, str]:
+        if not segments:
+            return {}
+        return self._translate_safe(segments, glossary)
+
+    def _translate_safe(self, segments: list[Segment], glossary: dict) -> dict[str, str]:
+        self.control()
+        blanks = {segment.id: segment.source for segment in segments if not segment.source.strip()}
+        if blanks:
+            nonblank = [segment for segment in segments if segment.id not in blanks]
+            return blanks | (self._translate_safe(nonblank, glossary) if nonblank else {})
+        messages, protected = self._messages(segments, glossary)
+        budget = (
+            self.config.context_window_tokens - self.config.max_output_tokens
+            - self.config.token_safety_margin
+        )
+        if estimate_input_tokens(messages) <= budget:
+            try:
+                return self._decode(self.request(messages), segments, protected)
+            except ContextLimitError:
+                pass
+        if len(segments) > 1:
+            middle = len(segments) // 2
+            return (
+                self._translate_safe(segments[:middle], glossary)
+                | self._translate_safe(segments[middle:], glossary)
+            )
+        segment = segments[0]
+        # Context is optional guidance; the complete source is always retained.
+        if segment.context:
+            return self._translate_safe([Segment(segment.id, segment.source)], glossary)
+        pieces = split_source(segment.source, protection_pattern(glossary))
+        if pieces is None:
+            raise TranslationError("Không đủ context/token để dịch đoạn nhỏ nhất. Kiểm tra context window và giới hạn token trong Cài đặt.")
+        left, right = pieces
+        left_id, right_id = segment.id + "_L", segment.id + "_R"
+        first = self._translate_safe([Segment(left_id, left)], glossary)[left_id]
+        second = self._translate_safe([Segment(right_id, right)], glossary)[right_id]
+        return {segment.id: preserve_edges(segment.source, join_translations(first, second))}
+
+    def _messages(self, segments: list[Segment], glossary: dict):
         protected = {s.id: protect(s.source, glossary) for s in segments}
         items = [
             {"id": s.id, "text": protected[s.id][0], "context": s.context[:2000]} for s in segments
@@ -148,12 +223,12 @@ class OnlineProvider:
             "each supplied id to its translated string. Do not add, omit, or duplicate ids. "
             "Do not add explanations, Markdown fences, or formatting."
         )
-        value = self.request(
-            [
-                {"role": "system", "content": instruction},
-                {"role": "user", "content": json.dumps(items, ensure_ascii=False)},
-            ]
-        )
+        return [
+            {"role": "system", "content": instruction},
+            {"role": "user", "content": json.dumps(items, ensure_ascii=False)},
+        ], protected
+
+    def _decode(self, value, segments, protected):
         value = value.strip()
         if value.startswith("```"):
             value = re.sub(r"^```(?:json)?\s*|\s*```$", "", value)
@@ -202,7 +277,13 @@ class ArgosProvider:
         self.translation = None
 
     def fingerprint(self, glossary: dict) -> str:
-        return signature("argos", {"model": "translate-zh_en-1_9", "runtime": "1.9.6"}, glossary)
+        profile = {"model": "translate-zh_en-1_9", "runtime": "1.9.6"}
+        if self.model_path:
+            candidate = Path(self.model_path).expanduser()
+            if not candidate.is_file():
+                raise TranslationError("Không tìm thấy model Argos đã chọn.")
+            profile["package_sha256"] = file_hash(candidate)
+        return signature("argos", profile, glossary)
 
     def close(self):
         pass
@@ -210,7 +291,15 @@ class ArgosProvider:
     def prepare(self):
         if self.translation is not None:
             return
-        local = data_root() / "argos-packages"
+        candidate = Path(self.model_path).expanduser() if self.model_path else None
+        if candidate and not candidate.is_file():
+            raise TranslationError("Không tìm thấy model Argos đã chọn.")
+        # Keep explicitly selected packages isolated so an older installed/bundled model
+        # cannot silently take precedence over the user's selection.
+        local = (
+            data_root() / "argos-selected" / file_hash(candidate)
+            if candidate else data_root() / "argos-packages"
+        )
         local.mkdir(parents=True, exist_ok=True)
         os.environ["ARGOS_PACKAGES_DIR"] = str(local)
         os.environ["ARGOS_DEVICE_TYPE"] = "cpu"
@@ -224,14 +313,12 @@ class ArgosProvider:
             ) from None
         bundled = resource_root() / "assets/models"
         settings.package_data_dir = local
-        settings.package_dirs = [local, bundled]
+        settings.package_dirs = [local]
+        if candidate is None and bundled.is_dir():
+            settings.package_dirs.append(bundled)
         installed = package.get_installed_packages()
         if not any(p.from_code == "zh" and p.to_code == "en" for p in installed):
-            candidate = (
-                Path(self.model_path)
-                if self.model_path
-                else bundled / "translate-zh_en-1_9.argosmodel"
-            )
+            candidate = candidate or bundled / "translate-zh_en-1_9.argosmodel"
             if not candidate.is_file():
                 raise TranslationError(
                     "Chưa có model Argos đi kèm. Đặt translate-zh_en-1_9.argosmodel vào assets/models khi build."
@@ -272,9 +359,7 @@ class ArgosProvider:
 def join_fragments(pieces: list[str]) -> str:
     result = ""
     for piece in pieces:
-        if result and piece and result[-1].isalnum() and piece[0].isalnum():
-            result += " "
-        result += piece
+        result = join_translations(result, piece)
     return result
 
 
