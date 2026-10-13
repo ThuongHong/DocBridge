@@ -83,17 +83,38 @@ class Pipeline:
             count += size
         if current:
             batches.append(current)
+
+        def checkpoint(values):
+            for sid, text in values.items():
+                if sid not in batch_ids or sid in result:
+                    raise TranslationError("Provider trả về thiếu/trùng segment.")
+                if not isinstance(text, str) or not text.strip():
+                    raise TranslationError("Provider trả về đoạn rỗng.")
+            result.update(values)
+            for sid, text in values.items():
+                lookup[sid].target = text
+            doc.revision += 1
+            self.store.save_document(job_id, doc)
+            done = sum(s.target is not None for s in doc.segments)
+            self.progress(job_id, "Đang dịch", done, len(doc.segments))
+
+        lookup = doc.by_id()
         for batch in batches:
             self.control()
             # Extremely long XML text nodes are split for translation, not for Office mapping.
             result = {}
+            batch_ids = {segment.id for segment in batch}
             normal = [
                 s for s in batch
                 if getattr(provider, "handles_long_segments", False)
                 or len(s.source) <= provider.batch_chars // 2
             ]
             if normal:
-                result.update(provider.translate(normal, glossary))
+                if hasattr(provider, "translate_batches"):
+                    for part in provider.translate_batches(normal, glossary):
+                        checkpoint(part)
+                else:
+                    checkpoint(provider.translate(normal, glossary))
             for segment in batch:
                 if segment in normal:
                     continue
@@ -103,17 +124,9 @@ class Pipeline:
                     self.control()
                     item = Segment(f"{segment.id}_{i}", chunk, context=chunk)
                     values.append(provider.translate([item], glossary)[item.id])
-                result[segment.id] = " ".join(values)
+                checkpoint({segment.id: " ".join(values)})
             if set(result) != {segment.id for segment in batch}:
                 raise TranslationError("Provider trả về thiếu/trùng segment.")
-            for segment in batch:
-                if not isinstance(result[segment.id], str) or not result[segment.id].strip():
-                    raise TranslationError("Provider trả về đoạn rỗng.")
-                segment.target = result[segment.id]
-            doc.revision += 1
-            self.store.save_document(job_id, doc)
-            done = sum(s.target is not None for s in doc.segments)
-            self.progress(job_id, "Đang dịch", done, len(doc.segments))
         self.store.update(job_id, status="review")
         self.control()
         return doc

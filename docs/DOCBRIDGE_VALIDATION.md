@@ -1,5 +1,13 @@
 # DocBridge validation
 
+The 2026-10-13 performance update reuses the Argos tokenizer/model and packs
+online requests against the existing context budget, with checkpoints and
+progress per completed request. The local 27-segment comparison was 2.29 times
+faster with identical translations; the mock online fixture fell from 16 to
+6 requests. Frozen Office exports matched the previously validated files
+member for member. See [performance diagnosis and measurements](PERFORMANCE_DIAGNOSIS.md)
+for the benchmarks, unchanged OCR limits and resume compatibility.
+
 The accepted UI is “Gọn một màn hình”: a document list with two task buttons,
 one primary action, an icon-only Settings button, and no main Review/Glossary
 tabs. Review remains available from the entry menu in its own window; Glossary

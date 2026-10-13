@@ -33,6 +33,9 @@ converter = "converter.__main__:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/converter"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"docs/ARGOS_RUNTIME_LICENSE.txt" = "converter/ARGOS_RUNTIME_LICENSE.txt"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

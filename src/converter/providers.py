@@ -174,16 +174,50 @@ class OnlineProvider:
         raise TranslationError("Không nhận được bản dịch.")
 
     def translate(self, segments: list[Segment], glossary: dict) -> dict[str, str]:
-        if not segments:
-            return {}
-        return self._translate_safe(segments, glossary)
+        result = {}
+        for part in self.translate_batches(segments, glossary):
+            result.update(part)
+        return result
+
+    def translate_batches(self, segments: list[Segment], glossary: dict):
+        """Yield completed requests so callers can checkpoint and show progress."""
+        budget = (
+            self.config.context_window_tokens - self.config.max_output_tokens
+            - self.config.token_safety_margin
+        )
+        empty_messages, _ = self._messages([], glossary)
+        overhead = estimate_input_tokens(empty_messages)
+        current, size = [], overhead
+        for segment in segments:
+            self.control()
+            messages, _ = self._messages([segment], glossary)
+            # Serialized items are additive, with a two-byte ", " separator.
+            # Measure each item once instead of rebuilding every candidate batch.
+            item_size = estimate_input_tokens(messages) - overhead
+            separator = 2 if current else 0
+            if current and size + item_size + separator > budget:
+                yield from self._translate_parts(current, glossary)
+                current, size, separator = [], overhead, 0
+            current.append(segment)
+            size += item_size + separator
+        if current:
+            yield from self._translate_parts(current, glossary)
 
     def _translate_safe(self, segments: list[Segment], glossary: dict) -> dict[str, str]:
+        result = {}
+        for part in self._translate_parts(segments, glossary):
+            result.update(part)
+        return result
+
+    def _translate_parts(self, segments: list[Segment], glossary: dict):
         self.control()
         blanks = {segment.id: segment.source for segment in segments if not segment.source.strip()}
         if blanks:
             nonblank = [segment for segment in segments if segment.id not in blanks]
-            return blanks | (self._translate_safe(nonblank, glossary) if nonblank else {})
+            yield blanks
+            if nonblank:
+                yield from self._translate_parts(nonblank, glossary)
+            return
         messages, protected = self._messages(segments, glossary)
         budget = (
             self.config.context_window_tokens - self.config.max_output_tokens
@@ -191,19 +225,20 @@ class OnlineProvider:
         )
         if estimate_input_tokens(messages) <= budget:
             try:
-                return self._decode(self.request(messages), segments, protected)
+                yield self._decode(self.request(messages), segments, protected)
+                return
             except ContextLimitError:
                 pass
         if len(segments) > 1:
             middle = len(segments) // 2
-            return (
-                self._translate_safe(segments[:middle], glossary)
-                | self._translate_safe(segments[middle:], glossary)
-            )
+            yield from self._translate_parts(segments[:middle], glossary)
+            yield from self._translate_parts(segments[middle:], glossary)
+            return
         segment = segments[0]
         # Context is optional guidance; the complete source is always retained.
         if segment.context:
-            return self._translate_safe([Segment(segment.id, segment.source)], glossary)
+            yield from self._translate_parts([Segment(segment.id, segment.source)], glossary)
+            return
         pieces = split_source(segment.source, protection_pattern(glossary))
         if pieces is None:
             raise TranslationError("Không đủ context/token để dịch đoạn nhỏ nhất. Kiểm tra context window và giới hạn token trong Cài đặt.")
@@ -211,12 +246,14 @@ class OnlineProvider:
         left_id, right_id = segment.id + "_L", segment.id + "_R"
         first = self._translate_safe([Segment(left_id, left)], glossary)[left_id]
         second = self._translate_safe([Segment(right_id, right)], glossary)[right_id]
-        return {segment.id: preserve_edges(segment.source, join_translations(first, second))}
+        yield {segment.id: preserve_edges(segment.source, join_translations(first, second))}
 
     def _messages(self, segments: list[Segment], glossary: dict):
         protected = {s.id: protect(s.source, glossary) for s in segments}
         items = [
-            {"id": s.id, "text": protected[s.id][0], "context": s.context[:2000]} for s in segments
+            {"id": s.id, "text": protected[s.id][0],
+             "context": "" if s.context == s.source == protected[s.id][0]
+             else s.context[:2000]} for s in segments
         ]
         instruction = (
             "Translate Simplified or Traditional Chinese text into fluent English. "
@@ -345,6 +382,12 @@ class ArgosProvider:
             package.install_from_path(candidate)
         try:
             self.translation = translate.get_translation_from_codes("zh", "en")
+            underlying = getattr(self.translation, "underlying", self.translation)
+            selected_package = getattr(underlying, "pkg", None)
+            if selected_package is not None and getattr(settings, "stanza_available", False):
+                from .argos_runtime import ArgosRuntime
+
+                self.translation = ArgosRuntime(selected_package)
         except Exception:
             raise TranslationError("Không nạp được package Argos Trung → Anh đã cài.") from None
 
