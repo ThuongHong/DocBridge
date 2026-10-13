@@ -22,7 +22,7 @@ NS = {
 XML_SPACE = "{http://www.w3.org/XML/1998/namespace}space"
 PARSER = etree.XMLParser(resolve_entities=False, no_network=True, remove_blank_text=False)
 MAX_PACKAGE_BYTES = 512 * 1024 * 1024
-OFFICE_ADAPTER_VERSION = 4
+OFFICE_ADAPTER_VERSION = 5
 
 
 def validate_archive(archive):
@@ -421,6 +421,19 @@ class OfficeReader:
                                 "được đồng bộ với nhãn đã dịch; công thức khác giữ nguyên, "
                                 "cần kiểm tra sau khi tính lại."
                             )
+                    elif cell.get("t") == "str" and value is not None:
+                        # OpenXML writers also store ordinary text directly in
+                        # <v>. Formula caches were handled above and stay literal.
+                        text = value.text or ""
+                        segment = self.doc.add_segment(
+                            text,
+                            {"part": part, "cell": address, "text_index": 0,
+                             "shared": False, "sheet": sheet.get("name", "Sheet")},
+                            context=text,
+                        )
+                        if not text.strip():
+                            segment.target = text
+                        block.segments.append(segment.id)
                     elif cell.get("t") in {"s", "inlineStr"}:
                         content = (
                             shared_items[int(value.text)]
@@ -582,6 +595,11 @@ def patch_parts(archive, segments, format):
             shared_root.append(content)
             cell.find("s:v", NS).text = str(new_index)
             shared_changed = True
+        elif cell.get("t") == "str":
+            value = cell.find("s:v", NS)
+            if value is None or len(cell_segments) != 1:
+                raise ValueError("Mapping cell không hợp lệ.")
+            set_text(value, cell_segments[0].text)
         else:
             content = cell.find("s:is", NS)
             for segment in cell_segments:

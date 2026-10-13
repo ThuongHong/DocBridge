@@ -127,7 +127,7 @@ def test_smartart_source_and_split_cache_share_a_target_without_duplicating_text
             assert "".join(root.xpath(".//a:t/text()", namespaces=NS)) == "Controller"
 
 
-@pytest.mark.parametrize("older_version", [1, 2, 3])
+@pytest.mark.parametrize("older_version", [1, 2, 3, 4])
 def test_changed_office_adapter_rejects_resume_but_preserves_historical_exports(word_file, store, tmp_path, older_version):
     from converter.pipeline import Pipeline
     job = store.add(word_file)

@@ -338,3 +338,68 @@ def test_right_click_review_targets_one_entry_from_a_selected_batch(
     assert window.review_id == job_id
     assert window.review_dialog.isVisible()
     window.close()
+
+
+def test_progress_burst_yields_to_gui_and_coalesces_table_refreshes(
+    word_file, store, monkeypatch, tmp_path
+):
+    import queue
+
+    monkeypatch.setenv("DOCBRIDGE_DATA_DIR", str(tmp_path / "preferences"))
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(store.root)
+    window.timer.stop()
+    window.add_paths([word_file])
+    job = window.selected_ids()[0]
+    window.events = queue.Queue()
+    for done in range(500):
+        window.events.put({"kind": "progress", "id": job, "message": "Đang dịch",
+                           "done": done + 1, "total": 500})
+    refreshes = []
+    refresh = window.refresh_jobs
+
+    def tracked_refresh():
+        refreshes.append(True)
+        refresh()
+
+    monkeypatch.setattr(window, "refresh_jobs", tracked_refresh)
+    window.poll()
+    assert len(refreshes) == 1
+    assert 0 < window.events.qsize() < 500
+    assert 0 < window.progress_bar.value() < 500
+    while not window.events.empty():
+        window.poll()
+    assert window.progress_bar.value() == 500
+    assert window.selected_ids() == [job]
+    app.processEvents()
+    window.close()
+
+
+def test_dead_worker_backlog_is_processed_before_finishing(word_file, store, monkeypatch, tmp_path):
+    import queue
+    from types import SimpleNamespace
+
+    monkeypatch.setenv("DOCBRIDGE_DATA_DIR", str(tmp_path / "preferences"))
+    QApplication.instance() or QApplication([])
+    window = MainWindow(store.root)
+    window.timer.stop()
+    window.add_paths([word_file])
+    job = window.selected_ids()[0]
+    window.events = queue.Queue()
+    window.process = SimpleNamespace(is_alive=lambda: False, join=lambda **_: None)
+    window.set_busy(True)
+    for done in range(150):
+        window.events.put({"kind": "progress", "id": job, "message": "Đang dịch",
+                           "done": done + 1, "total": 150})
+    window.events.put({"kind": "job_finished", "id": job})
+    window.events.put({"kind": "finished"})
+    window.poll()
+    assert window.process is not None and window.busy
+    while not window.events.empty():
+        window.poll()
+    assert window.process is None and not window.busy
+    assert not window.progress_messages
+    assert window.progress_bar.value() == 100
+    window.poll()
+    assert not window.progress_messages
+    window.close()

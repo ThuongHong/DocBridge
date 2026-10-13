@@ -271,6 +271,8 @@ unfinished translation requires a new job to keep its profile consistent.
 
 Office parser references and the choice to patch the original OOXML package
 are documented in [Office parsing research](docs/OFFICE_PARSING_RESEARCH.md).
+See [Office translation engine comparison](docs/OFFICE_TRANSLATION_RESEARCH.md)
+for Okapi/OmegaT/OpenXLIFF roundtrip patterns and the UI progress investigation.
 
 ## Build for Linux
 

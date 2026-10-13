@@ -41,7 +41,9 @@ def protection_pattern(glossary: dict) -> re.Pattern:
 def signature(kind: str, profile: dict, glossary: dict) -> str:
     payload = json.dumps(
         {"kind": kind, "profile": profile, "glossary": glossary,
-         "prompt_version": 4 if kind == "argos" else 3},
+         # Also versions Argos's translation policy: long segments are now
+         # split by the adapter, rather than by Pipeline before translation.
+         "prompt_version": 5 if kind == "argos" else 3},
         ensure_ascii=False,
         sort_keys=True,
     )
@@ -327,6 +329,9 @@ def terminology_acronyms(source: str, values: dict[str, str]) -> tuple[dict, dic
 
 class ArgosProvider:
     batch_chars = 1500
+    # This adapter already splits Chinese text internally and passes other
+    # text through verbatim; Pipeline must not split/rejoin opaque cell data.
+    handles_long_segments = True
 
     def __init__(self, model_path: str | None = None):
         self.model_path = model_path or environment("ARGOS_MODEL")

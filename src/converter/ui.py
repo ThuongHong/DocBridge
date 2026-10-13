@@ -3,6 +3,7 @@ from __future__ import annotations
 import multiprocessing as mp
 import os
 import queue
+import time
 from dataclasses import asdict
 from html import escape
 from pathlib import Path
@@ -1205,28 +1206,47 @@ class MainWindow(QMainWindow):
             return False
 
     def poll(self):
+        drained = self.events is None
         if self.events:
-            while True:
+            refresh = finished = False
+            last_progress = last_message = None
+            deadline = time.perf_counter() + 0.008
+            # A busy worker must not monopolize the GUI event loop. Coalesce
+            # progress and redraw once, leaving backlog for the next timer tick.
+            for index in range(64):
+                if index and time.perf_counter() >= deadline:
+                    break
                 try:
                     event = self.events.get_nowait()
                 except queue.Empty:
+                    drained = True
                     break
                 if event["kind"] == "progress":
                     self.progress_messages[event["id"]] = event["message"]
-                    self.show_status(event["message"])
-                    if event["total"]:
-                        self.progress_bar.setRange(0, event["total"])
-                        self.progress_bar.setValue(event["done"])
-                    self.refresh_jobs()
+                    last_message = event["message"]
+                    last_progress = event
+                    refresh = True
                 elif event["kind"] == "error":
-                    self.show_status(event["message"])
+                    last_message = event["message"]
                 elif event["kind"] == "job_finished":
                     self.progress_messages.pop(event["id"], None)
-                    self.refresh_jobs()
+                    refresh = True
                 elif event["kind"] == "finished":
-                    self.finish_process()
-        if self.process and not self.process.is_alive():
+                    finished = True
+                    break
+            if last_message is not None:
+                self.show_status(last_message)
+            if last_progress and last_progress["total"]:
+                self.progress_bar.setRange(0, last_progress["total"])
+                self.progress_bar.setValue(last_progress["done"])
+            if finished:
+                self.finish_process()
+            elif refresh:
+                self.refresh_jobs()
+        if self.process and not self.process.is_alive() and drained:
             # Includes native worker crashes that cannot send a final queue event.
+            # First consume its remaining events so stale progress cannot be
+            # applied after finish_process has reset the UI.
             self.store.recover()
             self.finish_process()
         if self.connection_events:

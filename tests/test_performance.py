@@ -155,3 +155,65 @@ def test_online_partial_requests_are_checkpointed_before_pause(word_file, store)
     assert all(store.load_document(job).by_id()[sid].target == text for sid, text in saved.items())
     assert len({event[2] for event in progress}) > 1
     provider.close()
+
+
+def test_translation_phase_is_reported_before_waiting_for_first_provider_response(
+    word_file, store, provider
+):
+    from converter.pipeline import Pipeline
+
+    job = store.add(word_file)
+    progress = []
+    translate = provider.translate
+
+    def checked_translate(segments, glossary):
+        assert progress[-1][1] == "Đang dịch"
+        return translate(segments, glossary)
+
+    provider.translate = checked_translate
+    Pipeline(store, progress=lambda *args: progress.append(args)).translate(job, provider, {}, "eng")
+    translating = [event for event in progress if event[1] == "Đang dịch"]
+    assert translating[0][2] == 0
+    assert translating[0][3] == len(store.load_document(job).segments)
+    assert translating[-1][2] == translating[-1][3]
+
+
+def test_old_argos_pdf_profile_blocks_resume_but_allows_historical_export(
+    text_pdf, store, tmp_path
+):
+    import hashlib
+
+    from converter.pipeline import Pipeline
+    from converter.providers import ArgosProvider
+
+    job = store.add(text_pdf)
+    pipeline = Pipeline(store)
+    doc = pipeline.parse(job, "eng")
+    doc.segments[0].target = "Saved historical translation"
+    doc.segments[1].source = "中" * 1000
+    doc.segments[1].target = None
+    store.save_document(job, doc)
+    old_payload = json.dumps(
+        {"kind": "argos", "profile": {"model": "translate-zh_en-1_9", "runtime": "1.9.6"},
+         "glossary": {}, "prompt_version": 4},
+        ensure_ascii=False, sort_keys=True,
+    )
+    store.update(job, profile=hashlib.sha256(old_payload.encode()).hexdigest())
+
+    class MustNotTranslate:
+        def translate(self, text):
+            pytest.fail("Old profile must be rejected before inference")
+
+    provider = ArgosProvider()
+    provider.translation = MustNotTranslate()
+    with pytest.raises(ValueError, match="Provider/model/glossary"):
+        pipeline.translate(job, provider, {}, "eng")
+    saved = store.load_document(job)
+    assert saved.segments[0].target == "Saved historical translation"
+    assert saved.segments[1].target is None
+    for segment in saved.segments:
+        if segment.target is None:
+            segment.target = "Another historical translation"
+    store.save_document(job, saved)
+    result = pipeline.run(job, None, "markdown", tmp_path / "out", export_only=True)
+    assert result["markdown"]["status"] == "done"

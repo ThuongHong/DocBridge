@@ -1,5 +1,16 @@
 # DocBridge validation
 
+The large-XLSX follow-up reproduced 399 ordinary Chinese cells left untranslated
+in a 39.21 MiB, three-sheet workbook. Direct non-formula `t="str"` values are now
+extracted and patched; the same file has zero remaining ordinary Chinese cells
+after Argos translation. Office adapter 5 requires fresh jobs for older parse
+caches. See [large Excel reproduction](LARGE_XLSX_REPRO.md) for cell-level
+evidence, native rendering and the six formula-result caches kept unchanged.
+Final review bumped the Argos translation-policy fingerprint to 5 so older
+partly translated PDF jobs cannot mix the previous and current splitting policies.
+Historical export-only access is retained. The regression suite now has
+136 passing tests and one skip.
+
 The 2026-10-13 performance update reuses the Argos tokenizer/model and packs
 online requests against the existing context budget, with checkpoints and
 progress per completed request. The local 27-segment comparison was 2.29 times

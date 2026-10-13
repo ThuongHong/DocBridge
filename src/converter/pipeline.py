@@ -72,6 +72,9 @@ class Pipeline:
         if not doc.segments:
             raise ValueError("Không trích xuất được text. Hãy kiểm tra file hoặc kết quả OCR.")
         pending = [s for s in doc.segments if s.target is None]
+        # Clear the parsing label before packing or waiting for the first API
+        # response; neither step necessarily produces a completed segment yet.
+        self.progress(job_id, "Đang dịch", len(doc.segments) - len(pending), len(doc.segments))
         # Batch limits include the surrounding context and never rely on output mode.
         batches, current, count = [], [], 0
         for segment in pending:
