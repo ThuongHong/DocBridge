@@ -20,47 +20,21 @@ anchors and translation revisions. The local store keeps job history and batch
 checkpoints so translation can resume and reviewed results can be exported again.
 
 ```mermaid
-flowchart TB
-    subgraph desktop["Desktop process"]
-        UI["PySide6 UI<br/>Documents · Translate / Convert<br/>Review from an entry menu"]
-        Settings["Settings<br/>Theme · Language · API URL/model · Offline/OCR · Glossary"]
-        Settings --> UI
-    end
+flowchart LR
+    UI["Desktop UI<br/>ui.py"]
+    Pipeline["Background workflow<br/>pipeline.py"]
+    Parse["Extract text / layout / OCR<br/>office.py · pdf.py"]
+    Translate["Translate: Argos or online API<br/>providers.py"]
+    Export["Export<br/>Office · Markdown + images"]
+    Store[("Local history and checkpoints")]
 
-    subgraph background["Worker process"]
-        Worker["worker.py<br/>Jobs · Pause/cancel · Event queue"]
-        Pipeline["pipeline.py<br/>Parse → Translate → Export"]
-        Office["office.py + office_drawings.py + excel_formulas.py<br/>OPC relationships → DOCX / PPTX / XLSX text<br/>Chart/workbook bindings · SmartArt text<br/>Direct-range text criteria synchronization"]
-        PDF["pdf.py + pdf_layout.py + scan_layout.py<br/>PDF text / tables / images + Tesseract OCR<br/>Weak-line / fragmented stroke retries<br/>Ruled scan grids · Retained figures<br/>Paragraphs · Two-column bands · Page geometry"]
-        Document["models.py<br/>Document · Blocks · Segments · Anchors<br/>Inline tab/break order"]
-        Translate["providers.py<br/>Sentence context · Glossary / protected values<br/>Batch validation"]
-        Online["OnlineProvider + llm_budget.py<br/>Context budget · Splitting · Retries"]
-        Argos["ArgosProvider<br/>Local Chinese → English model"]
-        Export["Export selected formats<br/>Patch OOXML / reconstruct PDF as DOCX<br/>Markdown + image assets"]
-
-        Worker --> Pipeline
-        Pipeline -->|Parse or resume| Office
-        Pipeline -->|Parse or resume| PDF
-        Office --> Document
-        PDF --> Document
-        Document --> Translate
-        Document -.->|Convert: original language| Export
-        Translate --> Online
-        Translate --> Argos
-        Translate -->|Completed revision| Export
-    end
-
-    Store[("store.py + local files<br/>SQLite jobs · Source copies · document.json<br/>Assets · Revisions · Export status")]
-    Endpoint["Configured Chat Completions API"]
-    Files["Output folder<br/>DOCX / PPTX / XLSX · Markdown + assets"]
-
-    UI -->|Spawn: jobs, options, API key in memory| Worker
-    Worker -.->|Progress / completion events| UI
-    UI <-->|Import / history / manual review edits| Store
-    Pipeline <-->|Load / save checkpoints and status| Store
-    Store -.->|Saved revision: re-export without translation| Export
-    Online <-->|HTTPS; localhost HTTP allowed| Endpoint
-    Export --> Files
+    UI --> Pipeline
+    Pipeline --> Parse
+    Parse --> Translate
+    Translate --> Export
+    Parse -->|Convert: original language| Export
+    UI <--> Store
+    Pipeline <--> Store
 ```
 
 Settings are saved separately from jobs; provider configuration contains no API
