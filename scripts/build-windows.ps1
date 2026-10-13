@@ -41,21 +41,21 @@ try {
     $env:ARGOS_PACKAGES_DIR = $BundleModels
     $env:ARGOS_DEVICE_TYPE = "cpu"
     Invoke-Checked $BuildPython @("-c", "import sys; from argostranslate import package; package.install_from_path(sys.argv[1])", $ModelPath)
-    $env:CONVERTER_BUNDLE_OFFLINE = "1"
-    $env:CONVERTER_BUNDLE_MODELS = $BundleModels
-    $env:CONVERTER_BUNDLE_TESSERACT = $TesseractPath
+    $env:DOCBRIDGE_BUNDLE_OFFLINE = "1"
+    $env:DOCBRIDGE_BUNDLE_MODELS = $BundleModels
+    $env:DOCBRIDGE_BUNDLE_TESSERACT = $TesseractPath
     Invoke-Checked $BuildPython @("-m", "PyInstaller", "--noconfirm", "--clean", "packaging/converter.spec")
-    Invoke-Checked $BuildPython @("scripts/collect-notices.py", "dist/Converter/THIRD_PARTY_NOTICES.txt")
-    Invoke-Checked $BuildPython @("scripts/check-size.py", "dist/Converter")
+    Invoke-Checked $BuildPython @("scripts/collect-notices.py", "dist/DocBridge/THIRD_PARTY_NOTICES.txt")
+    Invoke-Checked $BuildPython @("scripts/check-size.py", "dist/DocBridge")
     if (-not $IsccPath) {
         $IsccCommand = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
         if ($IsccCommand) { $IsccPath = $IsccCommand.Source }
     }
     if ($IsccPath) {
         Invoke-Checked $IsccPath @("packaging/installer.iss")
-        Invoke-Checked $BuildPython @("scripts/check-size.py", "dist/Converter-Setup-0.1.0.exe")
+        Invoke-Checked $BuildPython @("scripts/check-size.py", "dist/DocBridge-Setup-0.1.0.exe")
     } else {
-        Write-Host "Portable build: dist\Converter. Install Inno Setup 6 and run ISCC packaging\installer.iss to create the installer."
+        Write-Host "Portable build: dist\DocBridge. Install Inno Setup 6 and run ISCC packaging\installer.iss to create the installer."
     }
 } finally {
     Pop-Location

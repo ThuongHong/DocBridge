@@ -173,7 +173,7 @@ def test_bundled_glossary_prefers_longest_phrase_and_preserves_codes():
 def test_argos_glossary_acronyms_keep_word_spacing():
     class InstalledTranslation:
         def translate(self, text):
-            return {"连接": "connects", "和": "and", "。": "."}[text]
+            return {"连接": "connects", "和": "and", "。": "."}.get(text, "Invalid terminology")
 
     provider = ArgosProvider()
     provider.translation = InstalledTranslation()
@@ -187,6 +187,159 @@ def test_argos_glossary_acronyms_keep_word_spacing():
         "Runtime Environment (RTE) connects Application Software Component (SWC) "
         "and Basic Software (BSW)。"
     )
+
+
+def test_argos_keeps_subject_and_condition_together_with_glossary():
+    source = "防抱死制动系统不得在传感器故障时关闭。"
+    mixed = "Antilock Braking System (ABS)不得在传感器故障时关闭。"
+    target = "Antilock Braking System (ABS) must not be shut down in case of sensor failure."
+    calls = []
+
+    class InstalledTranslation:
+        def translate(self, text):
+            calls.append(text)
+            if text == mixed:
+                return target
+            return "The sensor must not be shut down in case of failure."
+
+    provider = ArgosProvider()
+    provider.translation = InstalledTranslation()
+    result = provider.translate([Segment("a", source)], {"防抱死制动系统": "Antilock Braking System (ABS)"})
+    assert result["a"] == target
+    assert calls == [mixed]
+
+
+def test_argos_retries_glossary_typo_using_known_acronyms_with_sentence_context():
+    source = "运行时环境连接应用软件组件和基础软件。"
+    glossary = {"运行时环境": "Runtime Environment (RTE)",
+                "应用软件组件": "Application Software Component (SWC)",
+                "基础软件": "Basic Software (BSW)"}
+    calls = []
+
+    class InstalledTranslation:
+        def translate(self, text):
+            calls.append(text)
+            if text == "RTE连接SWC和BSW。":
+                return "RTE connects SWC and BSW."
+            return "Runtme Envirronment (RTE) connects Application Software Component (SWC) and Basic Software (BSW)."
+
+    provider = ArgosProvider()
+    provider.translation = InstalledTranslation()
+    result = provider.translate([Segment("a", source)], glossary)["a"]
+    assert result == (
+        "Runtime Environment (RTE) connects Application Software Component (SWC) "
+        "and Basic Software (BSW)."
+    )
+    assert len(calls) == 2
+    assert all("__CVT_" not in call for call in calls)
+
+
+@pytest.mark.parametrize("source, glossary, ambiguous", [
+    ("运行时环境与RTE连接。", {"运行时环境": "Runtime Environment (RTE)"}, "RTE与RTE连接。"),
+    ("甲系统连接乙系统。", {"甲系统": "First System (SYS)", "乙系统": "Second System (SYS)"}, "SYS连接SYS。"),
+])
+def test_argos_does_not_expand_ambiguous_or_existing_acronyms(source, glossary, ambiguous):
+    calls = []
+
+    class InstalledTranslation:
+        def translate(self, text):
+            calls.append(text)
+            return "Connection."
+
+    provider = ArgosProvider()
+    provider.translation = InstalledTranslation()
+    target = provider.translate([Segment("a", source)], glossary)["a"]
+    assert all(value in target for value in glossary.values())
+    # The whole sentence is attempted once; subsequent calls use the protected
+    # fragments, never a sentence containing an ambiguous abbreviated subject.
+    assert ambiguous not in calls
+    assert len([call for call in calls if call.startswith(next(iter(glossary.values())))]) == 1
+
+
+@pytest.mark.parametrize("changed", ["code", "term", "duplicate", "unit"])
+def test_argos_glossary_sentence_rejects_changed_protected_values(changed):
+    source = "电子控制单元检查传感器AC-123，电压为12 V。"
+    mixed = "Electronic Control Unit (ECU)检查传感器AC-123，电压为12 V。"
+    reliable = "Electronic Control Unit (ECU) checks sensor AC-123 at 12 V."
+    invalid = {
+        "code": reliable.replace("AC-123", "AC- 123"),
+        "term": reliable.replace("Electronic Control Unit", "Electric Unit"),
+        "duplicate": reliable + " Electronic Control Unit (ECU)",
+        "unit": reliable.replace("12 V", "12"),
+    }[changed]
+    calls = []
+
+    class InstalledTranslation:
+        def translate(self, text):
+            calls.append(text)
+            return invalid if text == mixed else "check"
+
+    provider = ArgosProvider()
+    provider.translation = InstalledTranslation()
+    result = provider.translate([Segment("a", source)], {"电子控制单元": "Electronic Control Unit (ECU)"})["a"]
+    assert mixed in calls
+    assert result != invalid
+    assert result.count("Electronic Control Unit (ECU)") == 1
+    assert "AC-123" in result and "12 V" in result
+
+
+def test_argos_keeps_sentence_context_when_values_survive():
+    source = "在电压低于12 V时，不得启用该功能。"
+    target = "This function shall not be enabled if the voltage is less than 12 V."
+    calls = []
+
+    class InstalledTranslation:
+        def translate(self, text):
+            calls.append(text)
+            assert text == source
+            return target
+
+    provider = ArgosProvider()
+    provider.translation = InstalledTranslation()
+    assert provider.translate([Segment("a", source)], {}) == {"a": target}
+    assert calls == [source]
+
+
+def test_argos_fallback_preserves_the_unit_when_the_model_drops_it():
+    class InstalledTranslation:
+        def translate(self, text):
+            return {
+                "电压为12 V。": "Voltage is 12.", "电压为": "Voltage is", "。": ".",
+            }[text]
+
+    provider = ArgosProvider()
+    provider.translation = InstalledTranslation()
+    assert "12 V" in provider.translate([Segment("a", "电压为12 V。")], {})["a"]
+
+
+def test_technical_values_protect_units_as_well_as_numbers():
+    source = "电压12 V，压力100 kPa，温度80℃，速度1200 rpm。"
+    masked, values = protect(source, {})
+    assert {"12 V", "100 kPa", "80℃", "1200 rpm"} <= set(values.values())
+    assert restore(masked, values) == source
+
+
+def test_product_codes_touching_chinese_text_are_protected():
+    source = "请检查传感器AC-123的连接，并确认控制器ECU_456正常。"
+    masked, values = protect(source, {})
+    assert {"AC-123", "ECU_456"} <= set(values.values())
+    assert restore(masked, values) == source
+
+
+def test_argos_rejects_a_changed_code_touching_chinese_text():
+    source = "检查传感器AC-123的连接。"
+
+    class InstalledTranslation:
+        def translate(self, text):
+            if text == source:
+                return "Check sensor AC- 123 connections."
+            return "Check connections."
+
+    provider = ArgosProvider()
+    provider.translation = InstalledTranslation()
+    target = provider.translate([Segment("a", source)], {})["a"]
+    assert "AC-123" in target
+    assert "AC- 123" not in target
 
 
 def test_input_budget_splits_long_chinese_segment_before_sending():

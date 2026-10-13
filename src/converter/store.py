@@ -24,6 +24,9 @@ class Store:
                 created TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
                 updated TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
             )""")
+            columns = {row[1] for row in db.execute("PRAGMA table_info(jobs)")}
+            if "operation" not in columns:
+                db.execute("ALTER TABLE jobs ADD COLUMN operation TEXT NOT NULL DEFAULT 'translate'")
 
     def connect(self):
         db = sqlite3.connect(self.path, timeout=30)
@@ -73,7 +76,7 @@ class Store:
         return [self.get(job_id) for job_id in ids]
 
     def update(self, job_id: str, **changes):
-        allowed = {"status", "provider", "profile", "mode", "output_dir", "error", "exports"}
+        allowed = {"status", "provider", "profile", "mode", "output_dir", "error", "exports", "operation"}
         if not set(changes) <= allowed:
             raise ValueError("Unknown job fields")
         if "exports" in changes:

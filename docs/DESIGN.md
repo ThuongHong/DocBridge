@@ -1,4 +1,4 @@
-# Converter — thiết kế ứng dụng Windows
+# DocBridge — thiết kế ứng dụng Windows
 
 Trạng thái: đã có implementation v0.1 trong `src/converter`, tests và hướng dẫn
 đóng gói. UI/pipeline được kiểm tra trong cloud Linux; bản phát hành Windows
@@ -11,6 +11,9 @@ với model/OCR bundle và dịch vụ online thật cần chạy tại môi tr�
 - Nguồn dịch online: dịch vụ OpenAI-compatible Chat Completions. Người dùng chỉnh
   API URL, model ID, header/prefix xác thực, timeout, retry và batch/token trong Settings.
 - UI mặc định sáng và English; có chuyển tối/Tiếng Việt, lưu lựa chọn giữa các phiên.
+- UI đã chọn: “Gọn một màn hình”, hai tác vụ Translate to English / Convert to Markdown.
+  Review mở từ entry; Glossary nằm trong Settings, không có tab chính riêng.
+- Convert to Markdown giữ ngôn ngữ nguồn và không khởi tạo provider dịch.
 - Nút Add folder quét thư mục con và nhập DOCX/PPTX/XLSX/PDF; bỏ file khóa Office.
 - Glossary có 97 thuật ngữ automotive/Bosch/AUTOSAR có nguồn, cho sửa và bật/tắt.
 - Model offline đã chọn: file `translate-zh_en-1_9.argosmodel` người dùng đang có,
@@ -73,8 +76,9 @@ flowchart LR
     E --> D[Document model + segment IDs + source anchors]
     D --> T[Online endpoint hoặc Argos zh-en 1.9]
     T --> V[Kiểm tra IDs, số liệu, placeholder và completeness]
-    V --> R[Review và sửa bản dịch]
-    R --> S[Snapshot revision đã review]
+    V --> S[Snapshot revision đã lưu]
+    S --> R[Review tùy chọn từ entry]
+    R --> S
     S --> X{Chế độ xuất đã chọn}
     X -->|Office hoặc cả hai| O[Patch Office gốc / dựng DOCX từ PDF]
     X -->|Markdown hoặc cả hai| M[Markdown + assets]
@@ -121,13 +125,16 @@ thiết, provider/model, ngôn ngữ, glossary và prompt version; không chỉ 
 
 ## 4. Giao diện và hành vi
 
-Điều hướng gồm: Documents & history, Review và Glossary. Nút bánh răng mở hộp
-Settings gồm General, Online service và Offline & OCR.
+Màn hình chính chỉ có Documents & history, lựa chọn Translate to English /
+Convert to Markdown và một nút chạy chính. Review mở từ menu entry trong cửa sổ
+riêng. Nút bánh răng mở Settings gồm General, Online service, Offline & OCR và
+Glossary. Khi chọn Convert to Markdown, ẩn provider/chế độ Office và giữ ngôn ngữ
+nguồn; không cần API key hoặc model Argos.
 
 Màn hình Tài liệu:
 
 ```text
-Converter                                          Cài đặt
+DocBridge                                          Cài đặt
 ---------------------------------------------------------
 [ Add documents ▼ ] [ ⋯ ] hoặc kéo thả DOCX / PPTX / XLSX / PDF
 
@@ -258,7 +265,7 @@ relationships, media, công thức và phần không liên quan giữ nguyên v�
 | Định dạng | Phần dịch trong bản đầu | Phần giữ nguyên / cần xử lý rõ |
 | --- | --- | --- |
 | DOCX | Body, tables, headers/footers, footnotes/endnotes, textbox text chuẩn | Styles, ảnh, hyperlink đích, fields, equations; tracked changes cần cảnh báo |
-| PPTX | Textboxes, table cells, grouped shapes, speaker notes | Geometry, images, charts, SmartArt; text trong chart/SmartArt chưa dịch thì ghi vào report |
+| PPTX | Textboxes, table cells, grouped shapes, speaker notes, chart/SmartArt text và workbook chart nhúng | Geometry, images, chart/SmartArt properties; cache nhãn chart đồng bộ với worksheet được hỗ trợ, tham chiếu ngoài/không hỗ trợ ghi vào report |
 | XLSX | Text cells, shared/inline strings và rich text được hỗ trợ | Formulas, numeric cells, charts/images, references; không đổi sheet names |
 
 Không nhận DOC/PPT/XLS legacy hoặc macro-enabled files trong bản đầu; giải thích
@@ -336,7 +343,7 @@ UI gọi worker qua multiprocessing queues, không cần HTTP server hay browser
 Windows spawn entrypoint cần freeze_support, message schema/version và lifecycle
 rõ. Worker chỉ gửi IDs, tiến độ và errors; không gửi QWidget qua process.
 
-Mỗi job có thư mục dưới %LOCALAPPDATA%\Converter\jobs\<id>, source copy, assets
+Mỗi job có thư mục dưới %LOCALAPPDATA%\DocBridge\jobs\<id>, source copy, assets
 và SQLite records. Một coordinator quản lý trạng thái/ghi DB; worker không ghi
 xung đột. Export từ revision snapshot sang temp file cùng volume rồi atomic rename.
 Ứng dụng khởi động lại nhận diện job dở và cho resume, không giả định process còn sống.

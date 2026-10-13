@@ -53,8 +53,11 @@ def test_settings_switch_language_and_theme_without_losing_review(
     app = QApplication.instance() or QApplication([])
     window = MainWindow(store.root)
     assert window.theme == "light" and window.language == "en"
+    assert window.windowTitle() == "DocBridge"
     assert app.palette().color(QPalette.ColorRole.Window).lightness() > 200
-    assert window.tabs.count() == 3
+    assert window.centralWidget() == window.documents_page
+    assert window.settings_tabs.count() == 4
+    assert window.settings_tabs.widget(3) == window.glossary_page
     assert window.settings_button.accessibleName() == "Settings"
     window.settings_button.click()
     assert window.settings_dialog.isVisible()
@@ -183,6 +186,8 @@ def test_compact_main_actions_preserve_import_review_export_and_running_controls
     app = QApplication.instance() or QApplication([])
     window = MainWindow(store.root)
     window.show()
+    assert window.operation_combo.group.button(0).text() == "Translate to English"
+    assert window.operation_combo.group.button(1).text() == "Convert to Markdown"
     assert window.job_stack.currentWidget() == window.empty_page
     assert not window.start_button.isEnabled()
     assert not window.cancel_button.isVisible()
@@ -198,15 +203,138 @@ def test_compact_main_actions_preserve_import_review_export_and_running_controls
     monkeypatch.setattr(window, "start_jobs", lambda export_only=False: calls.append(export_only))
     window.export_button.trigger()
     assert calls == [True]
-    window.tabs.setCurrentIndex(0)
+    window.review_dialog.close()
     window.set_busy(True)
     assert not window.start_button.isVisible()
     assert window.pause_button.isVisible()
     assert window.cancel_button.isVisible()
     assert not window.export_button.isEnabled()
     window.set_busy(False)
-    window.tabs.setCurrentIndex(0)
     assert window.start_button.isVisible()
     assert not window.pause_button.isVisible()
     app.processEvents()
+    window.close()
+
+
+def test_review_dialog_loads_selected_document_and_preserves_edits(
+    word_file, store, provider, tmp_path, monkeypatch
+):
+    from converter.pipeline import Pipeline
+
+    monkeypatch.setenv("CONVERTER_DATA_DIR", str(tmp_path / "preferences"))
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(store.root)
+    window.add_paths([word_file])
+    job = window.selected_ids()[0]
+    Pipeline(store).run(job, provider, "both", tmp_path / "output")
+    window.refresh_jobs()
+    assert window.selected_ids() == [job]
+    window.review_button.trigger()
+    app.processEvents()
+    assert window.review_id == job
+    assert window.review_table.rowCount() > 0
+    assert window.review_dialog.isVisible()
+    window.review_table.item(0, 2).setText("Unsaved review change")
+    window.open_selected_review()
+    assert window.review_table.item(0, 2).text() == "Unsaved review change"
+    window.review_dialog.close()
+    assert store.load_document(job).segments[0].target == "Unsaved review change"
+    window.open_selected_review()
+    assert window.review_table.item(0, 2).text() == "Unsaved review change"
+    window.close()
+
+
+def test_worker_finish_refreshes_an_open_review_without_opening_it_automatically(
+    word_file, store, provider, tmp_path, monkeypatch
+):
+    from converter.pipeline import Pipeline
+
+    class ExitedWorker:
+        def join(self, timeout=None):
+            pass
+
+        def is_alive(self):
+            return False
+
+    monkeypatch.setenv("CONVERTER_DATA_DIR", str(tmp_path / "preferences"))
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(store.root)
+    window.add_paths([word_file])
+    job = window.selected_ids()[0]
+    Pipeline(store).run(job, provider, "both", tmp_path / "output")
+    window.finish_process()
+    assert not window.review_dialog.isVisible()
+    window.open_selected_review()
+    window.process = ExitedWorker()
+    window.set_busy(True)
+    updated = store.load_document(job)
+    updated.segments[0].target = "Updated by worker"
+    updated.revision += 1
+    store.save_document(job, updated)
+    window.finish_process()
+    app.processEvents()
+    assert window.review_id == job
+    assert window.review_table.rowCount() > 0
+    assert window.review_table.item(0, 2).text() == "Updated by worker"
+    window.close()
+
+
+def test_convert_task_hides_translation_options_and_persists_glossary_on_settings_close(
+    word_file, store, tmp_path, monkeypatch
+):
+    from converter.pipeline import Pipeline
+
+    monkeypatch.setenv("CONVERTER_DATA_DIR", str(tmp_path / "preferences"))
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(store.root)
+    window.show()
+    window.operation_combo.setCurrentIndex(window.operation_combo.findData("convert"))
+    assert not window.provider_combo.isVisible()
+    assert not window.mode_combo.isVisible()
+    assert window.start_button.text() == "Convert to Markdown"
+    assert "original language" in window.privacy_label.text()
+    window.open_settings()
+    window.settings_tabs.setCurrentWidget(window.glossary_page)
+    window.glossary_table.item(0, 1).setText("Edited in Settings")
+    window.settings_dialog.close()
+    assert "Edited in Settings" in load_preferences()["glossary"].values()
+    window.add_paths([word_file])
+    job = window.selected_ids()[0]
+    window.refresh_jobs()
+    assert window.job_table.item(0, 1).text() == "Markdown"
+    Pipeline(store).run(job, None, "markdown", tmp_path / "output", operation="convert")
+    window.refresh_jobs()
+    window.open_selected_review()
+    assert window.review_table.isColumnHidden(2)
+    assert not window.retranslate_button.isVisible()
+    assert "测试文本" in window.markdown_preview.toPlainText()
+    window.review_dialog.close()
+    window.operation_combo.setCurrentIndex(window.operation_combo.findData("translate"))
+    assert window.provider_combo.isVisible()
+    assert window.mode_combo.isVisible()
+    app.processEvents()
+    window.close()
+
+
+def test_right_click_review_targets_one_entry_from_a_selected_batch(
+    word_file, store, provider, tmp_path, monkeypatch
+):
+    from converter.pipeline import Pipeline
+
+    monkeypatch.setenv("CONVERTER_DATA_DIR", str(tmp_path / "preferences"))
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(store.root)
+    window.add_paths([word_file, word_file])
+    for job in window.selected_ids():
+        Pipeline(store).run(job, provider, "both", tmp_path / "output")
+    window.refresh_jobs()
+    assert len(window.selected_ids()) == 2
+    clicked = window.job_table.item(0, 0)
+    job_id = window.selected_ids()[0]
+    monkeypatch.setattr(window.more_menu, "exec", lambda point: window.review_button.trigger())
+    window.open_job_menu(window.job_table.visualItemRect(clicked).center())
+    app.processEvents()
+    assert window.selected_ids() == [job_id]
+    assert window.review_id == job_id
+    assert window.review_dialog.isVisible()
     window.close()

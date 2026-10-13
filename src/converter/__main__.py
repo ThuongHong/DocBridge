@@ -6,13 +6,13 @@ import sys
 
 def main():
     multiprocessing.freeze_support()
-    from PySide6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication, QTabWidget
 
     from .ui import MainWindow
 
     app = QApplication(sys.argv)
-    app.setApplicationName("Converter")
-    app.setOrganizationName("Converter")
+    app.setApplicationName("DocBridge")
+    app.setOrganizationName("DocBridge")
     window = MainWindow()
     window.show()
     if "--smoke-test" in sys.argv:
@@ -23,7 +23,10 @@ def main():
         target = Path(sys.argv[index + 1])
         app.processEvents()
         result = {
-            "tabs": window.tabs.count(),
+            "application": app.applicationName(),
+            "main_tabs": len(window.centralWidget().findChildren(QTabWidget)),
+            "tasks": window.operation_combo.count(),
+            "review_dialog": bool(window.review_dialog),
             "output_modes": window.mode_combo.count(),
             "profile_loaded": bool(window.profile.name),
             "theme": window.theme,

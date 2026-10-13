@@ -17,10 +17,24 @@ NS = {
     "s": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
     "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
     "rel": "http://schemas.openxmlformats.org/package/2006/relationships",
+    "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
 }
 XML_SPACE = "{http://www.w3.org/XML/1998/namespace}space"
 PARSER = etree.XMLParser(resolve_entities=False, no_network=True, remove_blank_text=False)
 MAX_PACKAGE_BYTES = 512 * 1024 * 1024
+OFFICE_ADAPTER_VERSION = 4
+
+
+def validate_archive(archive):
+    names = archive.namelist()
+    if sum(info.file_size for info in archive.infolist()) > MAX_PACKAGE_BYTES:
+        raise ValueError("Office package quá lớn sau giải nén (giới hạn 512 MB).")
+    if any(name.startswith("_xmlsignatures/") for name in names):
+        raise ValueError("Chưa hỗ trợ dịch file Office có chữ ký số.")
+    if any(name.endswith("vbaProject.bin") for name in names):
+        raise ValueError("Chưa hỗ trợ file Office có macro.")
+    if len(names) != len(set(names)):
+        raise ValueError("Office package chứa entries trùng tên.")
 
 
 def xml(data: bytes):
@@ -51,20 +65,36 @@ def rels(archive: zipfile.ZipFile, part: str) -> dict:
     return result
 
 
+def main_part(archive, format):
+    for target, kind, external in rels(archive, "").values():
+        if kind and kind.endswith("/officeDocument") and not external:
+            return target
+    # Retain support for older packages without the root relationship entry.
+    return {"docx": "word/document.xml", "pptx": "ppt/presentation.xml",
+            "xlsx": "xl/workbook.xml"}[format]
+
+
+def spreadsheet_parts(archive):
+    workbook = main_part(archive, "xlsx")
+    shared = next((target for target, kind, external in rels(archive, workbook).values()
+                   if kind and kind.endswith("/sharedStrings") and not external), None)
+    if shared is None and "xl/sharedStrings.xml" in archive.namelist():
+        shared = "xl/sharedStrings.xml"
+    return workbook, shared
+
+
 class OfficeReader:
     def __init__(self, source: Path, assets_dir: Path):
         self.source = source
         self.assets_dir = assets_dir
-        self.doc = Document(str(source), file_hash(source), source.suffix.lower().lstrip("."))
+        self.doc = Document(str(source), file_hash(source), source.suffix.lower().lstrip("."),
+                            adapter_version=OFFICE_ADAPTER_VERSION)
         self.archive = zipfile.ZipFile(source)
-        if sum(info.file_size for info in self.archive.infolist()) > MAX_PACKAGE_BYTES:
-            raise ValueError("Office package quá lớn sau giải nén (giới hạn 512 MB).")
-        if any(name.startswith("_xmlsignatures/") for name in self.archive.namelist()):
-            raise ValueError("Chưa hỗ trợ dịch file Office có chữ ký số.")
-        if any(name.endswith("vbaProject.bin") for name in self.archive.namelist()):
-            raise ValueError("Chưa hỗ trợ file Office có macro.")
-        if len(self.archive.namelist()) != len(set(self.archive.namelist())):
-            raise ValueError("Office package chứa entries trùng tên.")
+        try:
+            validate_archive(self.archive)
+        except Exception:
+            self.archive.close()
+            raise
 
     def close(self):
         self.archive.close()
@@ -98,13 +128,22 @@ class OfficeReader:
 
     def paragraph(self, node, part: str, prefix: str, context: str = "") -> Block:
         tree = node.getroottree()
-        candidates = []
-        for text in node.findall(f".//{prefix}:t", NS):
+        inline_nodes = []
+        controls = {q(prefix, "br"): "\n"}
+        if prefix == "w":
+            controls.update({q("w", "tab"): "\t", q("w", "cr"): "\n"})
+        for text in node.iter():
+            if text.tag not in {q(prefix, "t"), *controls}:
+                continue
             # Text boxes have nested paragraphs; keep each text node in exactly one segment.
             nearest = next((a for a in text.iterancestors() if a.tag == q(prefix, "p")), None)
             if nearest is node:
-                candidates.append(text)
-        full_text = "".join(item.text or "" for item in candidates)
+                # A w:tab in paragraph properties defines a stop, not inline text.
+                if prefix == "w" and text.tag in controls and text.getparent().tag != q("w", "r"):
+                    continue
+                inline_nodes.append(text)
+        candidates = [item for item in inline_nodes if item.tag == q(prefix, "t")]
+        full_text = "".join(controls.get(item.tag, item.text or "") for item in inline_nodes)
         block = Block("paragraph")
         if prefix == "w":
             style = node.find("w:pPr/w:pStyle", NS)
@@ -148,6 +187,7 @@ class OfficeReader:
             else:
                 groups.append((key, [text]))
 
+        starts = {}
         for _, nodes in groups:
             source = "".join(item.text or "" for item in nodes)
             if not source:
@@ -191,6 +231,13 @@ class OfficeReader:
             if not source.strip():
                 segment.target = source
             block.segments.append(segment.id)
+            starts[nodes[0]] = segment.id
+        if any(item.tag in controls for item in inline_nodes):
+            block.meta["inline"] = [
+                {"text": controls[item.tag]} if item.tag in controls
+                else {"segment": starts[item]}
+                for item in inline_nodes if item.tag in controls or item in starts
+            ]
         return block
 
     def word_container(self, node, part: str, relationships: dict) -> list[Block]:
@@ -234,20 +281,28 @@ class OfficeReader:
 
     def word(self):
         names = self.archive.namelist()
-        part_names = ["word/document.xml"] + sorted(
+        main = main_part(self.archive, "docx")
+        referenced = {target for target, kind, external in rels(self.archive, main).values()
+                      if kind and kind.rsplit("/", 1)[-1] in {
+                          "header", "footer", "footnotes", "endnotes", "comments",
+                      } and not external}
+        part_names = [main] + sorted(referenced | {
             name
             for name in names
             if re.fullmatch(r"word/(?:header\d+|footer\d+|footnotes|endnotes|comments)\.xml", name)
-        )
+        })
         for part in part_names:
             root = xml(self.archive.read(part))
             relationships = rels(self.archive, part)
-            if part == "word/document.xml":
+            if part == main:
                 body = root.find("w:body", NS)
                 self.doc.blocks.extend(self.word_container(body, part, relationships))
             else:
-                section = Block("section", meta={"title": PurePosixPath(part).stem})
-                if part.endswith(("footnotes.xml", "endnotes.xml", "comments.xml")):
+                title = {q("w", "hdr"): "Header", q("w", "ftr"): "Footer",
+                         q("w", "footnotes"): "Footnotes", q("w", "endnotes"): "Endnotes",
+                         q("w", "comments"): "Comments"}.get(root.tag, PurePosixPath(part).stem)
+                section = Block("section", meta={"title": title})
+                if root.tag in {q("w", "footnotes"), q("w", "endnotes"), q("w", "comments")}:
                     for note in root:
                         if note.get(q("w", "type")) in {"separator", "continuationSeparator"}:
                             continue
@@ -256,7 +311,6 @@ class OfficeReader:
                     section.children = self.word_container(root, part, relationships)
                 if section.children:
                     self.doc.blocks.append(section)
-        self.coverage_warnings()
 
     def powerpoint(self):
         slide_parts = sorted(
@@ -267,8 +321,9 @@ class OfficeReader:
             ],
             key=lambda name: int(re.search(r"slide(\d+)", name)[1]),
         )
-        presentation = xml(self.archive.read("ppt/presentation.xml"))
-        presentation_rels = rels(self.archive, "ppt/presentation.xml")
+        part = main_part(self.archive, "pptx")
+        presentation = xml(self.archive.read(part))
+        presentation_rels = rels(self.archive, part)
         slide_ids = presentation.findall("p:sldIdLst/p:sldId", NS)
         if slide_ids:
             slide_parts = [presentation_rels[item.get(q("r", "id"))][0] for item in slide_ids]
@@ -299,7 +354,6 @@ class OfficeReader:
                     if note_section.children:
                         section.children.append(note_section)
             self.doc.blocks.append(section)
-        self.coverage_warnings()
 
     def slide_shape(self, node, part: str, relationships: dict) -> list[Block]:
         if node.tag == q("p", "grpSp"):
@@ -329,13 +383,13 @@ class OfficeReader:
         return result
 
     def excel(self):
-        shared_part = "xl/sharedStrings.xml"
+        workbook_part, shared_part = spreadsheet_parts(self.archive)
         shared = (
-            xml(self.archive.read(shared_part)) if shared_part in self.archive.namelist() else None
+            xml(self.archive.read(shared_part)) if shared_part is not None else None
         )
         shared_items = list(shared) if shared is not None else []
-        workbook = xml(self.archive.read("xl/workbook.xml"))
-        relationships = rels(self.archive, "xl/workbook.xml")
+        workbook = xml(self.archive.read(workbook_part))
+        relationships = rels(self.archive, workbook_part)
         for sheet in workbook.findall("s:sheets/s:sheet", NS):
             part = relationships[sheet.get(q("r", "id"))][0]
             root = xml(self.archive.read(part))
@@ -360,6 +414,13 @@ class OfficeReader:
                     formula = cell.find("s:f", NS)
                     if formula is not None:
                         block.meta["literal"] = "=" + (formula.text or "")
+                        if re.search(r'"[^"\n]*[\u3400-\u9fff]', formula.text or ""):
+                            self.doc.warnings.append(
+                                "Công thức chứa chữ: điều kiện khớp chính xác trong "
+                                "SUMIF/COUNTIF/AVERAGEIF và nhóm IFS dùng vùng ô trực tiếp "
+                                "được đồng bộ với nhãn đã dịch; công thức khác giữ nguyên, "
+                                "cần kiểm tra sau khi tính lại."
+                            )
                     elif cell.get("t") in {"s", "inlineStr"}:
                         content = (
                             shared_items[int(value.text)]
@@ -381,6 +442,7 @@ class OfficeReader:
                                     "cell": address,
                                     "text_index": index,
                                     "shared": cell.get("t") == "s",
+                                    "sheet": sheet.get("name", "Sheet"),
                                 }
                                 segment = self.doc.add_segment(
                                     text.text or "", anchor, context=full, style=style
@@ -423,17 +485,16 @@ class OfficeReader:
                         self.pictures(xml(self.archive.read(target)), rels(self.archive, target))
                     )
             self.doc.blocks.append(section)
-        self.coverage_warnings()
 
     def coverage_warnings(self):
         names = self.archive.namelist()
         if any("/charts/" in name and name.endswith(".xml") for name in names):
             self.doc.warnings.append(
-                "Charts giữ nguyên trong Office; text trong chart chưa dịch, chart chưa xuất vào Markdown."
+                "Chart giữ bố cục trong Office; Markdown xuất nhãn/dữ liệu, chưa dựng hình chart."
             )
         if any("/diagrams/" in name and name.endswith(".xml") for name in names):
             self.doc.warnings.append(
-                "SmartArt giữ nguyên trong Office; text SmartArt chưa dịch hoặc xuất Markdown."
+                "SmartArt giữ bố cục trong Office; Markdown xuất text, chưa dựng hình SmartArt."
             )
         if self.doc.format == "pptx":
             self.doc.warnings.append(
@@ -454,6 +515,7 @@ def column_index(address: str) -> int:
 
 
 def read_office(source: Path, assets_dir: Path) -> Document:
+    from .office_drawings import read_drawing_text
     if not zipfile.is_zipfile(source):
         raise ValueError("File Office không phải OOXML hợp lệ hoặc đang được mã hóa.")
     reader = OfficeReader(source, assets_dir)
@@ -461,6 +523,8 @@ def read_office(source: Path, assets_dir: Path) -> Document:
         {".docx": reader.word, ".pptx": reader.powerpoint, ".xlsx": reader.excel}[
             source.suffix.lower()
         ]()
+        read_drawing_text(reader)
+        reader.coverage_warnings()
         return reader.doc
     finally:
         reader.close()
@@ -472,70 +536,138 @@ def set_text(node, text: str):
         node.set(XML_SPACE, "preserve")
 
 
+def patch_parts(archive, segments, format):
+    roots = {}
+    shared_root = None
+    if format == "xlsx":
+        workbook_part, shared_part = spreadsheet_parts(archive)
+        if shared_part is not None:
+            shared_root = xml(archive.read(shared_part))
+    cell_groups = {}
+    for segment in segments:
+        if segment.target == segment.source:
+            continue
+        anchor = segment.anchor
+        if "part" not in anchor:
+            continue
+        part = anchor["part"]
+        if part not in roots:
+            roots[part] = xml(archive.read(part))
+        root = roots[part]
+        if "cell" in anchor:
+            cell_groups.setdefault((part, anchor["cell"]), []).append(segment)
+        else:
+            for i, path in enumerate(anchor["paths"]):
+                nodes = root.xpath(
+                    path, namespaces={**NS, **{k: v for k, v in root.nsmap.items() if k}}
+                )
+                if len(nodes) != 1:
+                    raise ValueError(
+                        "Mapping Office không còn hợp lệ; vui lòng phân tích lại file."
+                    )
+                set_text(nodes[0], segment.text if i == 0 else "")
+    shared_changed = False
+    for (part, address), cell_segments in cell_groups.items():
+        cell = roots[part].find(f".//s:c[@r='{address}']", NS)
+        if cell is None or cell.find("s:f", NS) is not None:
+            raise ValueError("Mapping cell không hợp lệ.")
+        if cell.get("t") == "s":
+            # Clone per cell: equal source strings can have different reviewed translations.
+            old_index = int(cell.find("s:v", NS).text)
+            content = deepcopy(shared_root[old_index])
+            for segment in cell_segments:
+                texts = content.findall(".//s:t", NS)
+                set_text(texts[segment.anchor["text_index"]], segment.text)
+            new_index = len(shared_root)
+            shared_root.append(content)
+            cell.find("s:v", NS).text = str(new_index)
+            shared_changed = True
+        else:
+            content = cell.find("s:is", NS)
+            for segment in cell_segments:
+                texts = content.findall(".//s:t", NS)
+                set_text(texts[segment.anchor["text_index"]], segment.text)
+    if shared_changed:
+        shared_root.set("uniqueCount", str(len(shared_root)))
+        roots[shared_part] = shared_root
+    if format == "xlsx" and cell_groups:
+        from .excel_formulas import align_formula, translated_cells
+
+        cells = translated_cells(segments)
+        workbook = xml(archive.read(workbook_part))
+        relationships = rels(archive, workbook_part)
+        changed = False
+        for sheet in workbook.findall("s:sheets/s:sheet", NS):
+            part = relationships[sheet.get(q("r", "id"))][0]
+            root = roots.get(part)
+            if root is None:
+                root = xml(archive.read(part))
+            for formula in root.findall(".//s:sheetData/s:row/s:c/s:f", NS):
+                if not formula.text:
+                    continue
+                aligned = align_formula(formula.text, sheet.get("name", ""), cells)
+                if aligned != formula.text:
+                    formula.text = aligned
+                    roots[part] = root
+                    changed = True
+        if changed:
+            calculation = workbook.find("s:calcPr", NS)
+            if calculation is None:
+                calculation = etree.SubElement(workbook, q("s", "calcPr"))
+            calculation.set("fullCalcOnLoad", "1")
+            calculation.set("forceFullCalc", "1")
+            roots[workbook_part] = workbook
+    return roots
+
+
+def save_package(archive, target, replacements):
+    with zipfile.ZipFile(target, "w") as output:
+        for entry in archive.infolist():
+            data = archive.read(entry.filename)
+            if entry.filename in replacements:
+                replacement = replacements[entry.filename]
+                data = replacement if isinstance(replacement, bytes) else etree.tostring(
+                    replacement, xml_declaration=True, encoding="UTF-8"
+                )
+            output.writestr(entry, data)
+        output.comment = archive.comment
+
+
 def write_office(doc: Document, target: Path):
-    """Patch only text-bearing parts; copy all other uncompressed entries verbatim."""
+    """Patch text and linked caches; preserve all other package entries verbatim."""
+    import io
+
     if file_hash(Path(doc.source_path)) != doc.source_hash:
         raise ValueError("File nguồn đã thay đổi; không thể dùng mapping của bản dịch này.")
     if not doc.complete():
         raise ValueError("Còn đoạn chưa dịch; hãy hoàn thành hoặc review trước khi xuất Office.")
     with zipfile.ZipFile(doc.source_path) as archive:
-        roots = {}
-        shared_root = None
-        if doc.format == "xlsx" and "xl/sharedStrings.xml" in archive.namelist():
-            shared_root = xml(archive.read("xl/sharedStrings.xml"))
-        cell_groups = {}
+        replacements = patch_parts(archive, [s for s in doc.segments if not s.anchor.get("embedded")], doc.format)
+        lookup = doc.by_id()
+        embedded_groups = {}
         for segment in doc.segments:
-            if segment.target == segment.source:
-                continue
-            anchor = segment.anchor
-            if "part" not in anchor:
-                continue
-            part = anchor["part"]
-            if part not in roots:
-                roots[part] = xml(archive.read(part))
-            root = roots[part]
-            if "cell" in anchor:
-                cell_groups.setdefault((part, anchor["cell"]), []).append(segment)
-            else:
-                for i, path in enumerate(anchor["paths"]):
-                    nodes = root.xpath(
-                        path, namespaces={**NS, **{k: v for k, v in root.nsmap.items() if k}}
-                    )
+            embedded = segment.anchor.get("embedded")
+            if embedded:
+                embedded_groups.setdefault(embedded, []).append(segment)
+            for mirror in segment.anchor.get("mirrors", []):
+                if all(lookup[sid].target == lookup[sid].source for sid in mirror["ids"]):
+                    continue
+                part = mirror["part"]
+                if part not in replacements:
+                    replacements[part] = xml(archive.read(part))
+                root = replacements[part]
+                paths = mirror.get("paths") or [mirror["path"]]
+                text = "".join(lookup[sid].text for sid in mirror["ids"])
+                for index, path in enumerate(paths):
+                    nodes = root.xpath(path, namespaces={**NS, **{k:v for k,v in root.nsmap.items() if k}})
                     if len(nodes) != 1:
-                        raise ValueError(
-                            "Mapping Office không còn hợp lệ; vui lòng phân tích lại file."
-                        )
-                    set_text(nodes[0], segment.text if i == 0 else "")
-        shared_changed = False
-        for (part, address), segments in cell_groups.items():
-            cell = roots[part].find(f".//s:c[@r='{address}']", NS)
-            if cell is None or cell.find("s:f", NS) is not None:
-                raise ValueError("Mapping cell không hợp lệ.")
-            if cell.get("t") == "s":
-                # Clone per cell: equal source strings can have different reviewed translations.
-                old_index = int(cell.find("s:v", NS).text)
-                content = deepcopy(shared_root[old_index])
-                for segment in segments:
-                    texts = content.findall(".//s:t", NS)
-                    set_text(texts[segment.anchor["text_index"]], segment.text)
-                new_index = len(shared_root)
-                shared_root.append(content)
-                cell.find("s:v", NS).text = str(new_index)
-                shared_changed = True
-            else:
-                content = cell.find("s:is", NS)
-                for segment in segments:
-                    texts = content.findall(".//s:t", NS)
-                    set_text(texts[segment.anchor["text_index"]], segment.text)
-        if shared_changed:
-            shared_root.set("uniqueCount", str(len(shared_root)))
-            roots["xl/sharedStrings.xml"] = shared_root
-        with zipfile.ZipFile(target, "w") as output:
-            for entry in archive.infolist():
-                data = archive.read(entry.filename)
-                if entry.filename in roots:
-                    data = etree.tostring(
-                        roots[entry.filename], xml_declaration=True, encoding="UTF-8"
-                    )
-                output.writestr(entry, data)
-            output.comment = archive.comment
+                        raise ValueError("Mapping chart/SmartArt không còn hợp lệ.")
+                    set_text(nodes[0], text if index == 0 else "")
+        for part, segments in embedded_groups.items():
+            with zipfile.ZipFile(io.BytesIO(archive.read(part))) as embedded:
+                changes = patch_parts(embedded, segments, "xlsx")
+                if changes:
+                    buffer = io.BytesIO()
+                    save_package(embedded, buffer, changes)
+                    replacements[part] = buffer.getvalue()
+        save_package(archive, target, replacements)

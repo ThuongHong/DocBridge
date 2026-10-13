@@ -8,8 +8,8 @@ from pathlib import Path
 
 from .markdown import render_markdown
 from .models import OUTPUT_MODES, Document, Segment, file_hash
-from .office import read_office, write_office
-from .pdf import read_pdf, write_pdf_docx
+from .office import OFFICE_ADAPTER_VERSION, read_office, write_office
+from .pdf import PDF_ADAPTER_VERSION, read_pdf, write_pdf_docx
 from .providers import TranslationError, split_text
 from .store import Store
 
@@ -33,7 +33,8 @@ class Pipeline:
         saved = self.store.document_path(job_id)
         if saved.exists():
             doc = self.store.load_document(job_id)
-            if file_hash(source) != doc.source_hash or doc.adapter_version != 1:
+            version = PDF_ADAPTER_VERSION if source.suffix.lower() == ".pdf" else OFFICE_ADAPTER_VERSION
+            if file_hash(source) != doc.source_hash or doc.adapter_version != version:
                 raise ValueError("File nguồn hoặc adapter đã đổi; cần tạo job mới.")
             return doc
         self.store.update(job_id, status="parsing", error="")
@@ -126,18 +127,25 @@ class Pipeline:
         glossary: dict | None = None,
         ocr_language="chi_sim+chi_tra+eng",
         export_only=False,
+        operation="translate",
     ):
+        if operation not in {"translate", "convert"}:
+            raise ValueError("Tác vụ không hợp lệ.")
+        if operation == "convert":
+            mode = "markdown"
         if mode not in OUTPUT_MODES:
             raise ValueError("Chế độ xuất không hợp lệ.")
-        self.store.update(job_id, mode=mode, output_dir=str(output_dir), error="")
+        self.store.update(job_id, operation=operation, mode=mode, output_dir=str(output_dir), error="")
         try:
             if export_only:
                 doc = self.store.load_document(job_id)
+            elif operation == "convert":
+                doc = self.parse(job_id, ocr_language)
             else:
                 doc = self.translate(job_id, provider, glossary or {}, ocr_language)
-            if not doc.complete():
+            if operation != "convert" and not doc.complete():
                 raise ValueError("Còn đoạn chưa dịch; tiếp tục dịch trước khi xuất.")
-            return self.export(job_id, doc, mode, output_dir)
+            return self.export(job_id, doc, mode, output_dir, source=operation == "convert")
         except Paused:
             self.store.update(job_id, status="paused")
             return {}
@@ -148,14 +156,19 @@ class Pipeline:
             self.store.update(job_id, status="failed", error=str(exc))
             raise
 
-    def export(self, job_id: str, doc: Document, mode: str, output_dir: Path) -> dict:
+    def export(
+        self, job_id: str, doc: Document, mode: str, output_dir: Path, *, source=False
+    ) -> dict:
+        if source:
+            mode = "markdown"
         if file_hash(Path(doc.source_path)) != doc.source_hash:
             raise ValueError("File nguồn đã thay đổi; tạo job mới trước khi xuất.")
         self.store.update(job_id, status="exporting")
         self.progress(job_id, "Đang xuất file", len(doc.segments), len(doc.segments))
         output_dir.mkdir(parents=True, exist_ok=True)
         job = self.store.get(job_id)
-        basename = Path(job["name"]).stem + ".en"
+        stem = Path(job["name"]).stem + ("" if source else ".en")
+        basename = stem
         requested = [kind for kind in ["office", "markdown"] if mode in {kind, "both"}]
         result = {
             kind: {"status": "pending" if kind in requested else "not_requested"}
@@ -169,7 +182,7 @@ class Pipeline:
             any((output_dir / (basename + suffix)).exists() for suffix in suffixes)
             or (output_dir / (basename + ".assets")).exists()
         ):
-            basename = Path(job["name"]).stem + f".en-{index}"
+            basename = stem + f"-{index}"
             index += 1
         for kind in requested:
             self.control()
@@ -185,7 +198,7 @@ class Pipeline:
                     writer = write_pdf_docx if doc.format == "pdf" else write_office
                     writer(doc, Path(temporary))
                 else:
-                    text = render_markdown(doc, asset_target.name)
+                    text = render_markdown(doc, asset_target.name, source=source)
                     if doc.assets:
                         temp_assets = Path(
                             tempfile.mkdtemp(dir=output_dir, prefix=".converter-assets-")

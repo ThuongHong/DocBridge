@@ -7,16 +7,18 @@ from dataclasses import asdict
 from html import escape
 from pathlib import Path
 
-from PySide6.QtCore import QItemSelectionModel, QSize, Qt, QTimer, QUrl
-from PySide6.QtGui import QAction, QDesktopServices
+from PySide6.QtCore import QItemSelectionModel, QSize, Qt, QTimer, QUrl, Signal
+from PySide6.QtGui import QAction, QColor, QDesktopServices
 from PySide6.QtWidgets import (
     QAbstractButton,
     QAbstractItemView,
+    QButtonGroup,
     QCheckBox,
     QComboBox,
     QDialog,
     QFileDialog,
     QFormLayout,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -73,10 +75,53 @@ STATUS = {
 MODE_NAMES = {"office": "Chỉ Office", "markdown": "Chỉ Markdown", "both": "Cả hai"}
 
 
+class TaskSelector(QWidget):
+    currentIndexChanged = Signal(int)
+
+    def __init__(self):
+        super().__init__()
+        self.group = QButtonGroup(self)
+        self.values = []
+        self.row = QHBoxLayout(self)
+        self.row.setContentsMargins(0, 0, 0, 0)
+        self.row.setSpacing(6)
+        self.row.addStretch()
+        self.group.idClicked.connect(self.currentIndexChanged.emit)
+
+    def addItem(self, text, value):
+        button = QPushButton(text)
+        button.setCheckable(True)
+        self.group.addButton(button, len(self.values))
+        self.values.append(value)
+        self.row.insertWidget(self.row.count() - 1, button)
+        if self.group.checkedId() < 0:
+            button.setChecked(True)
+
+    def count(self):
+        return len(self.values)
+
+    def findData(self, value):
+        return self.values.index(value) if value in self.values else -1
+
+    def currentData(self):
+        return self.values[self.group.checkedId()]
+
+    def setCurrentIndex(self, index):
+        if 0 <= index < self.count() and index != self.group.checkedId():
+            self.group.button(index).setChecked(True)
+            self.currentIndexChanged.emit(index)
+
+
+class ReviewDialog(QDialog):
+    def reject(self):
+        if self.parent().save_review():
+            super().reject()
+
+
 class MainWindow(QMainWindow):
     def __init__(self, root: Path | None = None):
         super().__init__()
-        self.setWindowTitle("Converter — Trung → Anh")
+        self.setWindowTitle("DocBridge")
         self.resize(1180, 800)
         self.setAcceptDrops(True)
         self.store = Store(root or data_root())
@@ -103,9 +148,8 @@ class MainWindow(QMainWindow):
         self.cancel_event = None
         self.review_id = None
         self.review_doc = None
+        self.review_operation = None
         self.progress_messages = {}
-        self.tabs = QTabWidget()
-        self.setCentralWidget(self.tabs)
         self.build_documents()
         self.build_review()
         self.build_glossary()
@@ -116,7 +160,7 @@ class MainWindow(QMainWindow):
         self.settings_button.setIconSize(QSize(18, 18))
         self.settings_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         self.settings_button.clicked.connect(self.open_settings)
-        self.tabs.setCornerWidget(self.settings_button, Qt.Corner.TopRightCorner)
+        self.header_layout.addWidget(self.settings_button)
         self.bind_translations()
         self.retranslate_ui()
         self.timer = QTimer(self)
@@ -134,10 +178,14 @@ class MainWindow(QMainWindow):
     def build_documents(self):
         page = QWidget()
         self.documents_page = page
+        page.setObjectName("DocumentsPage")
+        page.setStyleSheet("QWidget#DocumentsPage { background: palette(base); }")
+        self.setCentralWidget(page)
         layout = QVBoxLayout(page)
         layout.setContentsMargins(16, 14, 16, 14)
         layout.setSpacing(12)
         toolbar = QHBoxLayout()
+        self.header_layout = toolbar
         title = QLabel("Danh sách tài liệu")
         font = title.font()
         font.setPointSize(12)
@@ -180,16 +228,31 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(self.more_button)
         layout.addLayout(toolbar)
 
+        self.operation_combo = TaskSelector()
+        self.operation_combo.addItem("Dịch sang tiếng Anh", "translate")
+        self.operation_combo.addItem("Chuyển sang Markdown", "convert")
+        self.operation_combo.setCurrentIndex(max(0, self.operation_combo.findData(
+            self.preferences.get("operation", "translate")
+        )))
+        layout.addWidget(self.operation_combo)
+        self.privacy_label = QLabel()
+        self.privacy_label.setWordWrap(True)
+        layout.addWidget(self.privacy_label)
+
         self.job_table = QTableWidget(0, 4)
         self.job_table.setHorizontalHeaderLabels(
-            ["Tài liệu", "Đầu ra Office", "Trạng thái", "Kết quả / lỗi"]
+            ["Tài liệu", "Đầu ra", "Trạng thái", "Kết quả / lỗi"]
         )
         self.job_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.job_table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.job_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.job_table.setShowGrid(False)
+        self.job_table.setFrameShape(QFrame.Shape.NoFrame)
+        self.job_table.verticalHeader().hide()
+        self.job_table.verticalHeader().setDefaultSectionSize(48)
         self.job_table.horizontalHeader().setStretchLastSection(True)
         self.job_table.setColumnWidth(0, 250)
-        self.job_table.setColumnWidth(1, 140)
+        self.job_table.setColumnWidth(1, 220)
         self.job_table.setColumnWidth(2, 190)
         self.job_table.cellDoubleClicked.connect(lambda *_: self.open_selected_review())
         self.job_table.itemSelectionChanged.connect(self.update_selection_actions)
@@ -214,27 +277,38 @@ class MainWindow(QMainWindow):
         self.job_stack.addWidget(self.job_table)
         layout.addWidget(self.job_stack, 1)
 
+        self.output_panel = QWidget()
+        self.output_panel.setObjectName("OutputPanel")
+        self.output_panel.setStyleSheet("QWidget#OutputPanel { background: palette(window); }")
+        footer = QVBoxLayout(self.output_panel)
+        footer.setContentsMargins(14, 14, 14, 14)
+        footer.setSpacing(12)
+        layout.addWidget(self.output_panel)
         options = QHBoxLayout()
-        options.addWidget(QLabel("Dịch Trung → Anh:"))
+        service_field = QVBoxLayout()
+        self.provider_label = QLabel("Dịch bằng:")
+        service_field.addWidget(self.provider_label)
         self.provider_combo = QComboBox()
         self.provider_combo.addItem(self.profile.name, "online")
         self.provider_combo.addItem("Offline — Argos Trung → Anh", "offline")
         self.provider_combo.setCurrentIndex(1 if self.preferences.get("provider") == "offline" else 0)
         self.provider_combo.currentIndexChanged.connect(self.update_privacy_label)
-        options.addWidget(self.provider_combo, 2)
-        options.addSpacing(16)
-        options.addWidget(QLabel("Xuất:"))
+        service_field.addWidget(self.provider_combo)
+        self.provider_combo.setMinimumHeight(32)
+        options.addLayout(service_field, 2)
+        mode_field = QVBoxLayout()
+        self.mode_label = QLabel("Xuất:")
+        mode_field.addWidget(self.mode_label)
         self.mode_combo = QComboBox()
         for mode, name in MODE_NAMES.items():
             self.mode_combo.addItem(name, mode)
         self.mode_combo.setCurrentIndex(max(0, self.mode_combo.findData(
             self.preferences.get("mode", "both")
         )))
-        options.addWidget(self.mode_combo, 1)
-        layout.addLayout(options)
-        self.privacy_label = QLabel()
-        self.privacy_label.setWordWrap(True)
-        layout.addWidget(self.privacy_label)
+        mode_field.addWidget(self.mode_combo)
+        self.mode_combo.setMinimumHeight(32)
+        options.addLayout(mode_field, 1)
+        footer.addLayout(options)
         self.mode_combo.setToolTip("PDF → Office là DOCX dựng lại. Office đầu vào giữ định dạng gốc.")
         output_row = QHBoxLayout()
         output_row.addWidget(QLabel("Lưu vào:"))
@@ -246,8 +320,9 @@ class MainWindow(QMainWindow):
             QLineEdit.ActionPosition.TrailingPosition,
         )
         self.output_browse_action.triggered.connect(self.choose_output)
+        self.output_edit.setMinimumHeight(32)
         output_row.addWidget(self.output_edit, 1)
-        layout.addLayout(output_row)
+        footer.addLayout(output_row)
         actions = QHBoxLayout()
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
@@ -264,9 +339,11 @@ class MainWindow(QMainWindow):
         )
         self.pause_button = self.button("Tạm dừng", self.pause_jobs, actions)
         self.pause_button.setMinimumSize(190, 36)
-        layout.addLayout(actions)
-        self.tabs.addTab(page, "Tài liệu & lịch sử")
+        footer.addLayout(actions)
         self.visible_jobs = {}
+        self.operation_combo.currentIndexChanged.connect(self.update_task_ui)
+        self.mode_combo.currentIndexChanged.connect(self.refresh_jobs)
+        self.update_task_ui()
         self.update_privacy_label()
         self.set_busy(False)
 
@@ -291,12 +368,15 @@ class MainWindow(QMainWindow):
         item = self.job_table.itemAt(point)
         if item is None:
             return
-        if item.row() not in {index.row() for index in self.job_table.selectedIndexes()}:
-            self.job_table.selectRow(item.row())
+        # Entry actions target the clicked document; the toolbar menu handles batches.
+        self.job_table.clearSelection()
+        self.job_table.selectRow(item.row())
         self.more_menu.exec(self.job_table.viewport().mapToGlobal(point))
 
     def build_review(self):
-        page = QWidget()
+        self.review_dialog = ReviewDialog(self)
+        self.review_dialog.resize(1120, 740)
+        page = self.review_dialog
         layout = QVBoxLayout(page)
         self.review_title = QLabel("Chọn một tài liệu trong danh sách để review.")
         layout.addWidget(self.review_title)
@@ -342,10 +422,14 @@ class MainWindow(QMainWindow):
         splitter.addWidget(preview_row)
         splitter.setSizes([400, 200])
         layout.addWidget(splitter)
-        self.tabs.addTab(page, "Review")
+        close_row = QHBoxLayout()
+        close_row.addStretch()
+        self.button("Đóng", self.review_dialog.close, close_row)
+        layout.addLayout(close_row)
 
     def build_glossary(self):
         page = QWidget()
+        self.glossary_page = page
         layout = QVBoxLayout(page)
         layout.addWidget(
             QLabel("Thuật ngữ cố định: nhập tiếng Trung và bản dịch tiếng Anh tương ứng.")
@@ -387,7 +471,6 @@ class MainWindow(QMainWindow):
         layout.addWidget(
             QLabel("Đổi glossary khi đang dịch dở: tạo job mới để giữ nhất quán bản dịch.")
         )
-        self.tabs.addTab(page, "Thuật ngữ")
 
     def build_settings(self):
         self.settings_dialog = QDialog(self)
@@ -545,6 +628,7 @@ class MainWindow(QMainWindow):
         offline_layout.addLayout(offline_form)
         offline_layout.addStretch()
         self.settings_tabs.addTab(offline_page, "Offline & OCR")
+        self.settings_tabs.addTab(self.glossary_page, "Thuật ngữ")
 
         actions = QHBoxLayout()
         actions.addStretch()
@@ -572,8 +656,7 @@ class MainWindow(QMainWindow):
         )
 
     def save_settings_only(self):
-        self.save_provider_settings()
-        self.save_display_preferences()
+        self.persist_preferences()
 
     def save_provider_settings(self, require_valid=False):
         try:
@@ -624,11 +707,30 @@ class MainWindow(QMainWindow):
                 action.setProperty("translation_source", action.text())
 
     def retranslate_ui(self):
-        self.setWindowTitle(self.tr("Converter — Trung → Anh"))
+        self.setWindowTitle("DocBridge")
+        self.operation_combo.setStyleSheet(
+            "QPushButton { padding: 7px 12px; border-radius: 6px; }"
+            "QPushButton:checked { border: 1px solid #2463a6; "
+            + ("background: #293e57; color: #eff4fb; }" if self.theme == "dark"
+               else "background: #eaf2fc; color: #172334; }")
+        )
+        line = "#405168" if self.theme == "dark" else "#dce3eb"
+        selected = "#293e57" if self.theme == "dark" else "#eaf2fc"
+        foreground = "#eff4fb" if self.theme == "dark" else "#172334"
+        self.job_table.setStyleSheet(
+            "QTableWidget { background: palette(base); }"
+            f"QTableWidget::item {{ padding: 8px; border-bottom: 1px solid {line}; }}"
+            f"QTableWidget::item:selected {{ background: {selected}; color: {foreground}; }}"
+            "QHeaderView::section { background: palette(base); padding: 10px 8px; "
+            f"border: none; border-bottom: 1px solid {line}; font-weight: normal; }}"
+        )
         self.settings_dialog.setWindowTitle(self.tr("Cài đặt"))
+        self.review_dialog.setWindowTitle(self.tr("Review tài liệu"))
         self.settings_button.setToolTip(self.tr("Cài đặt"))
         self.settings_button.setAccessibleName(self.tr("Cài đặt"))
-        self.settings_button.setIcon(settings_icon(self.palette().windowText().color()))
+        self.settings_button.setIcon(settings_icon(
+            QColor("#f8fafc" if self.theme == "dark" else "#111827")
+        ))
         self.more_button.setToolTip(self.tr("Thao tác khác"))
         self.more_button.setAccessibleName(self.tr("Thao tác khác"))
         self.output_browse_action.setToolTip(self.tr("Chọn thư mục"))
@@ -646,12 +748,10 @@ class MainWindow(QMainWindow):
             if isinstance(widget, QComboBox):
                 for index, text in enumerate(widget.property("item_sources") or []):
                     widget.setItemText(index, self.tr(text))
-        for index, title in enumerate(("Tài liệu & lịch sử", "Review", "Thuật ngữ")):
-            self.tabs.setTabText(index, self.tr(title).replace("&", "&&"))
-        for index, title in enumerate(("Chung", "Dịch vụ online", "Offline & OCR")):
+        for index, title in enumerate(("Chung", "Dịch vụ online", "Offline & OCR", "Thuật ngữ")):
             self.settings_tabs.setTabText(index, self.tr(title).replace("&", "&&"))
         for table, labels in (
-            (self.job_table, ["Tài liệu", "Đầu ra Office", "Trạng thái", "Kết quả / lỗi"]),
+            (self.job_table, ["Tài liệu", "Đầu ra", "Trạng thái", "Kết quả / lỗi"]),
             (self.review_table, ["Vị trí", "Nguồn", "Bản dịch", "Cảnh báo"]),
             (self.glossary_table, ["Tiếng Trung", "Tiếng Anh"]),
         ):
@@ -666,7 +766,7 @@ class MainWindow(QMainWindow):
                 self.review_table.item(row, 3).setText(self.tr(segment.warning))
         if self.key_status.property("message_source"):
             self.set_key_status(self.key_status.property("message_source"))
-        self.update_privacy_label()
+        self.update_task_ui()
         self.update_markdown_preview()
         self.refresh_jobs()
         if hasattr(self, "status_message"):
@@ -711,13 +811,25 @@ class MainWindow(QMainWindow):
 
     def update_privacy_label(self):
         self.privacy_label.setText(
-            self.tr("Nội dung được gửi đến dịch vụ online đã cấu hình.")
+            self.tr("Giữ ngôn ngữ gốc; xuất Markdown và ảnh.")
+            if self.operation_combo.currentData() == "convert"
+            else self.tr("Nội dung được gửi đến dịch vụ online đã cấu hình.")
             if self.provider_combo.currentData() == "online"
             else self.tr("Dịch trên máy bằng Argos; nội dung không gửi đến API.")
         )
 
+    def update_task_ui(self):
+        converting = self.operation_combo.currentData() == "convert"
+        for widget in (self.provider_label, self.provider_combo, self.mode_label, self.mode_combo):
+            widget.setVisible(not converting)
+        self.start_button.setText(self.tr(
+            "Chuyển sang Markdown" if converting else "Dịch / Tiếp tục"
+        ))
+        self.update_privacy_label()
+        self.refresh_jobs()
+
     def error(self, message):
-        QMessageBox.warning(self, "Converter", self.tr(message))
+        QMessageBox.warning(self, "DocBridge", self.tr(message))
 
     def selected_ids(self):
         return [
@@ -735,7 +847,13 @@ class MainWindow(QMainWindow):
             name = QTableWidgetItem(job["name"])
             name.setData(Qt.ItemDataRole.UserRole, job["id"])
             ext = Path(job["name"]).suffix.upper().lstrip(".")
-            output = self.tr("DOCX dựng lại") if ext == "PDF" else ext
+            office = self.tr("DOCX dựng lại") if ext == "PDF" else ext
+            operation = self.operation_combo.currentData() if job["status"] == "pending" else job["operation"]
+            mode = self.mode_combo.currentData() if job["status"] == "pending" else job["mode"]
+            output = (
+                "Markdown" if operation == "convert" or mode == "markdown"
+                else office + " + MD" if mode == "both" else office
+            )
             state = self.tr(self.progress_messages.get(
                 job["id"], STATUS.get(job["status"], job["status"])
             ))
@@ -914,6 +1032,7 @@ class MainWindow(QMainWindow):
             self.preferences.update(
                 {
                     "provider": self.provider_combo.currentData(),
+                    "operation": self.operation_combo.currentData(),
                     "mode": self.mode_combo.currentData(),
                     "output_dir": self.output_edit.text(),
                     "ocr_language": self.ocr_language.currentData(),
@@ -949,6 +1068,8 @@ class MainWindow(QMainWindow):
             button.setEnabled(not busy)
         self.pause_button.setEnabled(busy)
         self.cancel_button.setEnabled(busy)
+        for widget in (self.operation_combo, self.provider_combo, self.mode_combo, self.output_edit):
+            widget.setEnabled(not busy)
         if hasattr(self, "save_review_button"):
             self.save_review_button.setEnabled(not busy)
             self.retranslate_button.setEnabled(not busy)
@@ -972,11 +1093,12 @@ class MainWindow(QMainWindow):
             return
         if not self.persist_preferences():
             return
-        if export_only and self.review_id in ids and not self.save_review():
+        if self.review_id in ids and not self.save_review():
             return
         self.api_key = self.key_edit.text().strip()
         try:
-            if not export_only and self.provider_combo.currentData() == "online":
+            converting = self.operation_combo.currentData() == "convert"
+            if not export_only and not converting and self.provider_combo.currentData() == "online":
                 self.profile.validate()
                 if self.profile.auth_header and not self.api_key:
                     raise ValueError("Nhập API key trong Cài đặt hoặc chọn Offline.")
@@ -984,7 +1106,10 @@ class MainWindow(QMainWindow):
                 for job_id in ids:
                     if (
                         not self.store.document_path(job_id).exists()
-                        or not self.store.load_document(job_id).complete()
+                        or (
+                            self.store.get(job_id)["operation"] != "convert"
+                            and not self.store.load_document(job_id).complete()
+                        )
                     ):
                         raise ValueError("Chọn bản dịch đã hoàn thành để xuất lại.")
             self.events = self.context.Queue()
@@ -992,8 +1117,9 @@ class MainWindow(QMainWindow):
             self.cancel_event = self.context.Event()
             options = {
                 "provider": self.provider_combo.currentData(),
+                "operation": self.operation_combo.currentData(),
                 "profile": asdict(self.profile),
-                "mode": self.mode_combo.currentData(),
+                "mode": "markdown" if converting else self.mode_combo.currentData(),
                 "output_dir": self.output_edit.text(),
                 "glossary": self.glossary(),
                 "ocr_language": self.ocr_language.currentData(),
@@ -1043,6 +1169,40 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(100)
         self.refresh_jobs()
         self.show_status("Đã lưu tiến độ. Xem trạng thái và kết quả trong danh sách.")
+        if self.review_dialog.isVisible():
+            self.load_selected_review()
+
+    def load_selected_review(self):
+        if self.process:
+            return False
+        ids = self.selected_ids()
+        if not ids:
+            return False
+        row = self.job_table.currentRow()
+        focused = self.job_table.item(row, 0) if row >= 0 else None
+        focused_id = focused.data(Qt.ItemDataRole.UserRole) if focused else None
+        ordered = ([focused_id] if focused_id in ids else []) + ids
+        job_id = next(
+            (candidate for candidate in ordered if self.store.document_path(candidate).exists()),
+            None,
+        )
+        if job_id is None:
+            return False
+        try:
+            latest = self.store.load_document(job_id)
+            if (
+                self.review_id == job_id and self.review_doc.revision == latest.revision
+                and self.review_operation == self.store.get(job_id)["operation"]
+            ):
+                # Reopening the same revision must preserve unsaved table edits.
+                return True
+            if self.review_id and not self.save_review():
+                return False
+            self.load_review(job_id)
+            return True
+        except Exception as exc:
+            self.error(exc)
+            return False
 
     def poll(self):
         if self.events:
@@ -1089,16 +1249,24 @@ class MainWindow(QMainWindow):
         if len(ids) != 1:
             self.error("Chọn một file để review.")
             return
-        try:
-            self.load_review(ids[0])
-            self.tabs.setCurrentIndex(1)
-        except Exception as exc:
-            self.error(exc)
+        if self.load_selected_review():
+            self.review_dialog.show()
+            self.review_dialog.raise_()
+            self.review_dialog.activateWindow()
+        elif not self.store.document_path(ids[0]).exists():
+            self.show_status("Dịch hoặc chuyển tài liệu trước khi mở Review.")
 
     def load_review(self, job_id):
         doc = self.store.load_document(job_id)
         self.review_id = job_id
         self.review_doc = doc
+        self.review_operation = self.store.get(job_id)["operation"]
+        converting = self.review_operation == "convert"
+        self.review_table.setColumnHidden(2, converting)
+        self.retranslate_button.setVisible(not converting)
+        self.review_filter.model().item(1).setEnabled(not converting)
+        if converting and self.review_filter.currentIndex() == 1:
+            self.review_filter.setCurrentIndex(0)
         self.review_title.setText(self.store.get(job_id)["name"] + f" · revision {doc.revision}")
         self.warning_view.setPlainText("\n".join(self.tr(w) for w in doc.warnings))
         self.review_table.setRowCount(0)
@@ -1181,7 +1349,7 @@ class MainWindow(QMainWindow):
                 value["status"] = "stale"
         self.store.update(self.review_id, status="review", exports=exports)
         self.load_review(self.review_id)
-        self.tabs.setCurrentIndex(0)
+        self.review_dialog.hide()
         self.job_table.clearSelection()
         for row in range(self.job_table.rowCount()):
             if self.job_table.item(row, 0).data(Qt.ItemDataRole.UserRole) == self.review_id:
@@ -1189,11 +1357,16 @@ class MainWindow(QMainWindow):
         self.start_jobs()
 
     def update_markdown_preview(self):
-        if self.review_doc and self.review_doc.complete():
+        converting = bool(
+            self.review_id and self.store.get(self.review_id)["operation"] == "convert"
+        )
+        if self.review_doc and (converting or self.review_doc.complete()):
             self.markdown_preview.document().setBaseUrl(
                 QUrl.fromLocalFile(str(self.store.job_dir(self.review_id)) + "/")
             )
-            self.markdown_preview.setMarkdown(render_markdown(self.review_doc, "assets"))
+            self.markdown_preview.setMarkdown(render_markdown(
+                self.review_doc, "assets", source=converting
+            ))
         else:
             self.markdown_preview.setPlainText(self.tr("Markdown preview có sau khi hoàn thành bản dịch."))
 
@@ -1299,6 +1472,9 @@ class MainWindow(QMainWindow):
             self.connection_process.terminate()
             self.connection_process.join(timeout=1)
         if not self.persist_preferences():
+            event.ignore()
+            return
+        if not self.save_review():
             event.ignore()
             return
         event.accept()

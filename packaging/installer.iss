@@ -1,27 +1,27 @@
-#define AppName "Converter"
+#define AppName "DocBridge"
 #define AppVersion "0.1.0"
 
 [Setup]
 AppId={{88C59509-04AA-43DB-A745-659965DE8F60}
 AppName={#AppName}
 AppVersion={#AppVersion}
-DefaultDirName={localappdata}\Programs\Converter
-DefaultGroupName=Converter
+DefaultDirName={localappdata}\Programs\DocBridge
+DefaultGroupName=DocBridge
 OutputDir=..\dist
-OutputBaseFilename=Converter-Setup-{#AppVersion}
+OutputBaseFilename=DocBridge-Setup-{#AppVersion}
 Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 WizardStyle=modern
-UninstallDisplayIcon={app}\Converter.exe
+UninstallDisplayIcon={app}\DocBridge.exe
 
 [Files]
-Source: "..\dist\Converter\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\DocBridge\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\Converter"; Filename: "{app}\Converter.exe"
+Name: "{autoprograms}\DocBridge"; Filename: "{app}\DocBridge.exe"
 
 [Run]
-Filename: "{app}\Converter.exe"; Description: "Mở Converter"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\DocBridge.exe"; Description: "Mở DocBridge"; Flags: nowait postinstall skipifsilent

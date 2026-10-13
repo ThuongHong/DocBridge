@@ -72,10 +72,19 @@ class Document:
         return cls.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
     def by_id(self) -> dict[str, Segment]:
-        return {segment.id: segment for segment in self.segments}
+        lookup = {segment.id: segment for segment in self.segments}
+        if len(lookup) != len(self.segments):
+            raise ValueError("Segment IDs trùng; tạo job mới để phân tích lại.")
+        return lookup
 
     def add_segment(self, text: str, anchor: dict, **kwargs) -> Segment:
-        segment = Segment(f"s{len(self.segments):06d}", text, anchor, **kwargs)
+        if not hasattr(self, "_next_segment_id"):
+            self._next_segment_id = 1 + max(
+                (int(s.id[1:]) for s in self.segments if s.id.startswith("s") and s.id[1:].isdigit()),
+                default=-1,
+            )
+        segment = Segment(f"s{self._next_segment_id:06d}", text, anchor, **kwargs)
+        self._next_segment_id += 1
         self.segments.append(segment)
         return segment
 

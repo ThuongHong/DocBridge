@@ -14,13 +14,22 @@ def resource_root() -> Path:
     return Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2]))
 
 
+def environment(name: str) -> str | None:
+    """Prefer DocBridge settings, retaining existing Converter overrides."""
+    return os.environ.get("DOCBRIDGE_" + name) or os.environ.get("CONVERTER_" + name)
+
+
 def data_root() -> Path:
-    custom = os.environ.get("CONVERTER_DATA_DIR")
+    custom = environment("DATA_DIR")
     if custom:
         return Path(custom)
     if sys.platform == "win32":
-        return Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "Converter"
-    return Path(os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share"))) / "converter"
+        base = Path(os.environ.get("LOCALAPPDATA", str(Path.home())))
+        current, legacy = base / "DocBridge", base / "Converter"
+    else:
+        base = Path(os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share")))
+        current, legacy = base / "docbridge", base / "converter"
+    return legacy if legacy.exists() and not current.exists() else current
 
 
 @dataclass
@@ -39,7 +48,7 @@ class ProviderConfig:
 
     @classmethod
     def load(cls, path: Path | None = None) -> ProviderConfig:
-        override = os.environ.get("CONVERTER_PROVIDER_CONFIG")
+        override = environment("PROVIDER_CONFIG")
         default = resource_root() / "config/provider.json"
         local = resource_root() / "config/provider.local.json"
         saved = data_root() / "provider.json"
@@ -108,7 +117,10 @@ def get_api_key() -> str:
     import keyring
 
     try:
-        return keyring.get_password("Converter", "translation-api") or ""
+        return (
+            keyring.get_password("DocBridge", "translation-api")
+            or keyring.get_password("Converter", "translation-api") or ""
+        )
     except keyring.errors.KeyringError:
         return ""
 
@@ -117,9 +129,10 @@ def set_api_key(value: str) -> None:
     import keyring
 
     if value:
-        keyring.set_password("Converter", "translation-api", value)
+        keyring.set_password("DocBridge", "translation-api", value)
     else:
-        try:
-            keyring.delete_password("Converter", "translation-api")
-        except keyring.errors.PasswordDeleteError:
-            pass
+        for service in ("DocBridge", "Converter"):
+            try:
+                keyring.delete_password(service, "translation-api")
+            except keyring.errors.PasswordDeleteError:
+                pass

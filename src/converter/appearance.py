@@ -8,28 +8,32 @@ from PySide6.QtWidgets import QApplication
 
 
 def settings_icon(color: QColor) -> QIcon:
-    """A small, palette-aware vector gear with a transparent center."""
-    pixmap = QPixmap(36, 36)
-    pixmap.setDevicePixelRatio(2)
-    pixmap.fill(Qt.GlobalColor.transparent)
+    """Render at native pixel densities instead of downscaling a single 2x bitmap."""
     path = QPainterPath()
     path.setFillRule(Qt.FillRule.OddEvenFill)
     for index in range(32):
         angle = index * 2 * pi / 32
-        radius = 8 if index % 4 < 2 else 6.2
+        radius = 8.5 if index % 4 < 2 else 6.6
         x, y = 9 + radius * cos(angle), 9 + radius * sin(angle)
         if index == 0:
             path.moveTo(x, y)
         else:
             path.lineTo(x, y)
     path.closeSubpath()
-    path.addEllipse(6.2, 6.2, 5.6, 5.6)
-    painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    painter.setPen(Qt.PenStyle.NoPen)
-    painter.fillPath(path, color)
-    painter.end()
-    return QIcon(pixmap)
+    path.addEllipse(6.4, 6.4, 5.2, 5.2)
+    icon = QIcon()
+    for scale in (1, 2, 3):
+        pixmap = QPixmap(18 * scale, 18 * scale)
+        pixmap.setDevicePixelRatio(scale)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.fillPath(path, color)
+        painter.end()
+        icon.addPixmap(pixmap, QIcon.Mode.Normal)
+        icon.addPixmap(pixmap, QIcon.Mode.Active)
+    return icon
 
 
 def apply_theme(theme: str) -> None:

@@ -3,7 +3,16 @@
 import re
 
 ENGLISH = {
-    "Converter — Trung → Anh": "Converter — Chinese → English",
+    "Dịch sang tiếng Anh": "Translate to English",
+    "Chuyển sang Markdown": "Convert to Markdown",
+    "Dịch bằng:": "Translate with:",
+    "Review tài liệu": "Document review",
+    "Giữ ngôn ngữ gốc; xuất Markdown và ảnh.": "Keep the original language; export Markdown and images.",
+    "Dịch hoặc chuyển tài liệu trước khi mở Review.": "Translate or convert the document before opening Review.",
+    "Tác vụ không hợp lệ.": "Invalid task.",
+    "Segment IDs trùng; tạo job mới để phân tích lại.": "Duplicate segment IDs. Create a new job to parse the document again.",
+    "Đầu ra": "Output",
+    "DocBridge — Trung → Anh": "DocBridge — Chinese → English",
     "Sẵn sàng. Chọn file và chế độ xuất để bắt đầu.": "Ready. Add documents and choose an output mode to begin.",
     "Thêm file": "Add files",
     "Danh sách tài liệu": "Documents",
@@ -182,7 +191,7 @@ ENGLISH = {
     "Dịch vụ trả về response không đúng Chat Completions schema.": "The service returned an invalid Chat Completions response.",
     "Không nhận được bản dịch.": "No translation received.",
     "Response thiếu/trùng đoạn hoặc không phải JSON bản dịch hợp lệ.": "The response has missing or duplicate segments, or is not valid translation JSON.",
-    "Bản phát triển chưa cài Argos. Cài converter-desktop[offline] để dùng Offline.": "Argos is not installed. Install converter-desktop[offline] to use Offline.",
+    "Bản phát triển chưa cài Argos. Cài docbridge-desktop[offline] để dùng Offline.": "Argos is not installed. Install docbridge-desktop[offline] to use Offline.",
     "Chưa có model Argos đi kèm. Đặt translate-zh_en-1_9.argosmodel vào assets/models khi build.": "No Argos model is bundled. Place translate-zh_en-1_9.argosmodel in assets/models when building.",
     "Không nạp được package Argos Trung → Anh đã cài.": "Could not load the installed Argos Chinese → English package.",
     "Không tìm thấy Tesseract. Cần bộ OCR đi kèm để đọc PDF scan.": "Tesseract was not found. OCR is required to read scanned PDFs.",

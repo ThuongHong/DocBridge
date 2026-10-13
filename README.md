@@ -1,8 +1,9 @@
-# Converter
+# DocBridge
 
-A Windows desktop application for Chinese-to-English document translation.
-Choose **Office only**, **Markdown only**, or **both**. Both exports use the same
-reviewed translation; changing the output mode does not translate the document again.
+A desktop application for Chinese-to-English document translation and
+original-language Markdown conversion. For translation, choose **Office only**,
+**Markdown only**, or **both**. Both exports use the same saved translation;
+changing the output mode does not translate the document again.
 
 | Input | Office output | Markdown output |
 | --- | --- | --- |
@@ -10,6 +11,70 @@ reviewed translation; changing the output mode does not translate the document a
 | PPTX | PPTX with frames, styles, and objects preserved | Markdown organized by slide, with images |
 | XLSX | XLSX with formulas, charts, and images preserved | Markdown organized by sheet, with tables and images |
 | Text-based or scanned PDF | Reconstructed DOCX | Markdown, tables, and images |
+
+## Architecture
+
+The desktop UI starts a separate worker process for parsing, OCR, translation
+and export. All formats share a document model with blocks, segment IDs, source
+anchors and translation revisions. The local store keeps job history and batch
+checkpoints so translation can resume and reviewed results can be exported again.
+
+```mermaid
+flowchart TB
+    subgraph desktop["Desktop process"]
+        UI["PySide6 UI<br/>Documents · Translate / Convert<br/>Review from an entry menu"]
+        Settings["Settings<br/>Theme · Language · API URL/model · Offline/OCR · Glossary"]
+        Settings --> UI
+    end
+
+    subgraph background["Worker process"]
+        Worker["worker.py<br/>Jobs · Pause/cancel · Event queue"]
+        Pipeline["pipeline.py<br/>Parse → Translate → Export"]
+        Office["office.py + office_drawings.py + excel_formulas.py<br/>OPC relationships → DOCX / PPTX / XLSX text<br/>Chart/workbook bindings · SmartArt text<br/>Direct-range text criteria synchronization"]
+        PDF["pdf.py + pdf_layout.py + scan_layout.py<br/>PDF text / tables / images + Tesseract OCR<br/>Weak-line / fragmented stroke retries<br/>Ruled scan grids · Retained figures<br/>Paragraphs · Two-column bands · Page geometry"]
+        Document["models.py<br/>Document · Blocks · Segments · Anchors<br/>Inline tab/break order"]
+        Translate["providers.py<br/>Sentence context · Glossary / protected values<br/>Batch validation"]
+        Online["OnlineProvider + llm_budget.py<br/>Context budget · Splitting · Retries"]
+        Argos["ArgosProvider<br/>Local Chinese → English model"]
+        Export["Export selected formats<br/>Patch OOXML / reconstruct PDF as DOCX<br/>Markdown + image assets"]
+
+        Worker --> Pipeline
+        Pipeline -->|Parse or resume| Office
+        Pipeline -->|Parse or resume| PDF
+        Office --> Document
+        PDF --> Document
+        Document --> Translate
+        Document -.->|Convert: original language| Export
+        Translate --> Online
+        Translate --> Argos
+        Translate -->|Completed revision| Export
+    end
+
+    Store[("store.py + local files<br/>SQLite jobs · Source copies · document.json<br/>Assets · Revisions · Export status")]
+    Endpoint["Configured Chat Completions API"]
+    Files["Output folder<br/>DOCX / PPTX / XLSX · Markdown + assets"]
+
+    UI -->|Spawn: jobs, options, API key in memory| Worker
+    Worker -.->|Progress / completion events| UI
+    UI <-->|Import / history / manual review edits| Store
+    Pipeline <-->|Load / save checkpoints and status| Store
+    Store -.->|Saved revision: re-export without translation| Export
+    Online <-->|HTTPS; localhost HTTP allowed| Endpoint
+    Export --> Files
+```
+
+Settings are saved separately from jobs; provider configuration contains no API
+key. Keys use the operating system keyring or remain in memory for the session.
+Online translation sends extracted text to the configured endpoint; Argos runs
+locally. PDF extraction currently uses the PDF/OCR adapter shown above.
+
+Translation exports automatically when complete. **Convert to Markdown** bypasses
+translation providers, reads source text even when a translation already exists,
+and retains translation checkpoints for later use. **Review** opens a separate
+window from the entry menu; it is optional and never opens automatically. Saving
+creates a new revision and marks older exports stale. **Re-export** uses stored
+content without calling a translation provider. See [validation results](docs/DOCBRIDGE_VALIDATION.md)
+for the tested behavior and current limitations.
 
 ## Run the development version
 
@@ -23,7 +88,13 @@ python -m venv .venv
 ```
 
 On Linux or macOS, use `.venv/bin/python` instead. Application data is stored in
-`%LOCALAPPDATA%\Converter` on Windows. Set `CONVERTER_DATA_DIR` to override this location.
+`%LOCALAPPDATA%\DocBridge` on Windows or `$XDG_DATA_HOME/docbridge` on Linux
+(default `~/.local/share/docbridge`). Existing Converter data is reused when the
+new directory does not exist, preserving settings and history. Set
+`DOCBRIDGE_DATA_DIR` to override this location. Legacy `CONVERTER_*` environment
+variables and the `converter` command remain supported; DocBridge overrides take
+precedence. The installed primary command is `docbridge`; the internal Python
+package remains `converter` for compatibility.
 The desktop interface defaults to **Light** mode and **English**. Use the **⚙ Settings**
 icon to switch between Light/Dark or English/Tiếng Việt. These choices are saved
 and applied immediately without restarting.
@@ -52,7 +123,7 @@ the configuration; closing Settings also retains incomplete configuration drafts
 Settings do not need to contain a working provider to build or use offline mode.
 
 `config/provider.json` supplies initial defaults. If no saved user configuration
-exists, `CONVERTER_PROVIDER_CONFIG` or the ignored `config/provider.local.json` can
+exists, `DOCBRIDGE_PROVIDER_CONFIG` or the ignored `config/provider.local.json` can
 supply development defaults. Saved user settings take precedence on subsequent
 starts; passing an explicit path to `ProviderConfig.load` still selects that file.
 Never put API keys in these JSON files or in a build.
@@ -97,7 +168,7 @@ For development:
 ```powershell
 .venv\Scripts\python -m pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
 .venv\Scripts\python -m pip install -e ".[offline]"
-$env:CONVERTER_ARGOS_MODEL = "D:\Models\translate-zh_en-1_9.argosmodel"
+$env:DOCBRIDGE_ARGOS_MODEL = "D:\Models\translate-zh_en-1_9.argosmodel"
 .venv\Scripts\python -m converter
 ```
 
@@ -107,10 +178,17 @@ model. Release builds bundle the installed model, so end users do not need to
 configure Argos. The chosen model is accepted as a project requirement; no model
 selection or benchmarking step is required.
 
+Offline translation keeps complete sentence context after substituting glossary
+terms. It accepts a result only when terms, codes and numeric values are retained.
+If a glossary phrase is misspelled, it can retry with an unambiguous acronym
+already present in that term, then restore its full name. A protected-fragment
+fallback remains available. These checks preserve terminology and values;
+they do not establish general semantic accuracy of the local model.
+
 ### Scanned PDFs and OCR
 
 Development installations need Tesseract on PATH with the `chi_sim`, `chi_tra`,
-and `eng` language packs. Set `CONVERTER_TESSERACT` to select an executable.
+and `eng` language packs. Set `DOCBRIDGE_TESSERACT` to select an executable.
 Windows releases bundle Tesseract and its language packs in `assets/tesseract/`.
 Pages with a text layer are read directly; scanned pages use OCR. Images inside
 text-based PDFs are processed separately when needed. Review allows source
@@ -126,14 +204,17 @@ verifies SHA-256 checksums.
    **Add documents ▼ → Add folder** scans subfolders for DOCX, PPTX, XLSX and PDF, skips Office lock
    files (`~$...`) and the application's internal job/output directories, and selects
    all imported rows.
-2. Choose online or offline translation, an output mode, and a destination folder.
+2. Choose **Translate to English** or **Convert to Markdown** and a destination.
+   For translation, choose online/offline and an output mode.
    The folder icon inside the destination field opens the folder picker.
 3. Click **Translate / Resume**. The primary action becomes **Pause** while running;
    **Cancel** is in the `⋯` menu. Pause and cancel take
    effect after the current request or batch. Completed batches are saved so work
    can resume after restarting the application.
-4. Double-click a document or use **⋯ → Review translation** to edit translations. Previously exported files are
-   marked as stale when their translation changes.
+4. Results stay in the list when processing finishes. To make a correction,
+   right-click an entry, double-click it, or use **⋯ → Review translation**.
+   Review opens a separate window and saves edits when closed. Previously exported
+   files are marked as stale when their translation changes.
 5. Choose **⋯ → Re-export reviewed translation**. This requires
    neither an API key nor new translation requests.
 
@@ -143,9 +224,18 @@ leaving original documents and exported files intact. Existing output names are
 preserved by adding a suffix to new files. If one exporter fails in Both mode,
 the successful output is retained and the other error is reported separately.
 
+### Convert without translation
+
+Choose **Convert to Markdown**, add/select documents, choose a destination and
+click **Convert to Markdown**. Translation-service and Office-output controls
+are hidden for this task. It requires neither an API key nor an Argos model.
+PDF scans still require local OCR. Output uses the original language and names
+such as `manual.md` plus `manual.assets/`; translation uses `manual.en.md`.
+Existing files receive a suffix rather than being overwritten.
+
 ## Built-in terminology
 
-The Glossary tab starts with **97 editable automotive/Bosch/AUTOSAR term pairs**.
+**Settings → Glossary** starts with **97 editable automotive/Bosch/AUTOSAR term pairs**.
 The Chinese phrases are curated for this app; English names are checked against
 public official sources. This is not an official Bosch or AUTOSAR bilingual
 glossary. See [source details](docs/GLOSSARY_SOURCES.md) or **Glossary sources**
@@ -161,19 +251,52 @@ unfinished translation requires a new job to keep its profile consistent.
 ## Format limitations
 
 - Word and PowerPoint retain text runs, styles, images, tables, and relationships.
+  Main document/presentation/workbook parts and linked headers, footers and
+  shared strings are discovered through OPC relationships, including custom
+  part filenames. Markdown labels Word ancillary sections by their role.
+  Explicit inline line breaks and Word tabs retain their order in paragraph
+  context and Markdown; Markdown uses `<br>` for these line breaks, including
+  inside table cells. Word tab-stop settings remain in the original Office XML.
   Longer translations may change pagination or overflow text frames. Groups with
   different styles are translated separately, using paragraph context online;
   sentences with complex mixed formatting need review.
-- XLSX retains formulas and numeric cells. Shared strings are cloned per cell
-  when different translations are needed. Sheet names and chart/SmartArt text
-  are not translated. Charts and SmartArt remain in Office files but are not
-  exported as images in Markdown; the application reports these limitations.
-- PDF-to-DOCX reconstructs content rather than reproducing the original layout
-  or fonts exactly. Ruled tables are extracted; scanned or unruled tables and
-  complex layouts need review.
+- XLSX retains formula structure and numeric cells. Exact text criteria in
+  SUMIF/COUNTIF/AVERAGEIF and their IFS variants follow translated labels in
+  directly referenced cell/column ranges. Conflicting reviewed labels or new
+  matches are rejected before writing an output. Wildcards, named/external
+  ranges, computed criteria and other formula functions are not synchronized;
+  recalculate and inspect these workbooks in a spreadsheet application.
+  Markdown retains the original formula text. Shared strings are cloned per cell
+  when different translations are needed. Sheet names are not translated.
+  Chart titles and text labels are translated; ordinary worksheet references
+  and embedded XLSX chart workbooks share targets with their chart caches.
+  External/unsupported references can reset cached labels when refreshed.
+  SmartArt data/cached drawing text and drawing text boxes are extracted;
+  matching paragraph groups share a reviewed target. Complex SmartArt layouts
+  still need native Office validation. Charts and SmartArt retain their native
+  geometry but are represented by text/data rather than images in Markdown.
+
+- PDF-to-DOCX reconstructs source page sizes and page boundaries, paragraphs,
+  font sizes/emphasis, ruled tables, image dimensions and simple two-column bands.
+  Column bands use borderless Word tables with a gutter; full-width headings and
+  notes remain outside them. Inter-block whitespace
+  is approximate and slightly reduced for longer English text; pagination can
+  still change. Complete rectangular grids in scans are detected and OCR is run
+  per cell; low-confidence/unread grids retain their source image. Substantial
+  unrecognized figure regions are also kept at their source scale. Unruled or
+  merged-cell scan tables and complex multi-column layouts need
+  further verification. It does not reproduce every PDF graphic or font exactly.
+  Weak text lines receive a cropped single-line OCR retry; fragmented scan
+  regions can additionally retry with slightly emphasized strokes. Accepted
+  replacements retain the original layout anchors and existing numbers/codes.
+  Confidence scores do not guarantee transcription accuracy; source scans may
+  still need checking before sending extracted text to an online translator.
 - Legacy DOC/PPT/XLS, macros, encrypted files, and digitally signed Office files
   are not supported in this version.
 - Markdown preserves representable document structure, not all Office formatting.
+
+Office parser references and the choice to patch the original OOXML package
+are documented in [Office parsing research](docs/OFFICE_PARSING_RESEARCH.md).
 
 ## Build for Linux
 
@@ -186,21 +309,21 @@ model and runtime:
 mkdir -p build/argos-packages
 ARGOS_PACKAGES_DIR="$PWD/build/argos-packages" ARGOS_DEVICE_TYPE=cpu \
   .venv/bin/python -c 'from pathlib import Path; from argostranslate import package; package.install_from_path(Path("assets/models/translate-zh_en-1_9.argosmodel"))'
-CONVERTER_BUNDLE_OFFLINE=1 \
-CONVERTER_BUNDLE_MODELS="$PWD/build/argos-packages" \
-CONVERTER_BUNDLE_TESSERACT="$PWD/assets/tesseract" \
+DOCBRIDGE_BUNDLE_OFFLINE=1 \
+DOCBRIDGE_BUNDLE_MODELS="$PWD/build/argos-packages" \
+DOCBRIDGE_BUNDLE_TESSERACT="$PWD/assets/tesseract" \
   .venv/bin/python -m PyInstaller --noconfirm --clean packaging/converter.spec
-.venv/bin/python scripts/collect-notices.py dist/Converter/THIRD_PARTY_NOTICES.txt
-.venv/bin/python scripts/check-size.py dist/Converter
+.venv/bin/python scripts/collect-notices.py dist/DocBridge/THIRD_PARTY_NOTICES.txt
+.venv/bin/python scripts/check-size.py dist/DocBridge
 ```
 
-Start with `dist/Converter/Converter`. Keep `_internal` beside the executable.
+Start with `dist/DocBridge/DocBridge`. Keep `_internal` beside the executable.
 For a startup and real offline inference check with Python network connections
 blocked, use an isolated data directory:
 
 ```bash
-QT_QPA_PLATFORM=offscreen CONVERTER_DATA_DIR="$PWD/.test-data/release-smoke" \
-  dist/Converter/Converter --smoke-test "$PWD/build/release-smoke.json" --offline-smoke
+QT_QPA_PLATFORM=offscreen DOCBRIDGE_DATA_DIR="$PWD/.test-data/release-smoke" \
+  dist/DocBridge/DocBridge --smoke-test "$PWD/build/release-smoke.json" --offline-smoke
 ```
 
 See [actual local model results](docs/OFFLINE_SMOKE.md) for the real Chinese → English
@@ -221,14 +344,14 @@ not included in builds.
 ```
 
 The script installs the CPU runtime and local Argos package, builds
-`dist\Converter` using PyInstaller, and enforces an installed footprint below
+`dist\DocBridge` using PyInstaller, and enforces an installed footprint below
 2 GB. If Inno Setup 6 is on PATH or supplied through `-IsccPath`, it also creates
-`dist\Converter-Setup-0.1.0.exe` and checks the installer size. Qt uses
+`dist\DocBridge-Setup-0.1.0.exe` and checks the installer size. Qt uses
 Essentials/Widgets without WebEngine. Release distributions include
 `THIRD_PARTY_NOTICES.txt`. Builds are unsigned; code signing and automatic updates
 are not implemented.
 
-After building, run `Converter.exe` on a clean Windows machine and exercise
+After building, run `DocBridge.exe` on a clean Windows machine and exercise
 online/offline translation, Chinese scanned PDFs, and all three output modes.
 The cloud development environment runs Linux; Windows builds and installers
 must be validated on Windows before release.

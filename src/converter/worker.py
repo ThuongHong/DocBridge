@@ -20,7 +20,7 @@ def run_jobs(root: str, job_ids: list[str], options: dict, api_key: str, queue, 
             raise Paused()
 
     try:
-        if not options.get("export_only"):
+        if not options.get("export_only") and options.get("operation", "translate") != "convert":
             provider = (
                 ArgosProvider(options.get("argos_model") or None)
                 if options["provider"] == "offline"
@@ -30,7 +30,11 @@ def run_jobs(root: str, job_ids: list[str], options: dict, api_key: str, queue, 
             if pause.is_set() or cancel.is_set():
                 break
             queue.put({"kind": "started", "id": job_id})
-            store.update(job_id, provider=options["provider"])
+            operation = (
+                store.get(job_id)["operation"]
+                if options.get("export_only") else options.get("operation", "translate")
+            )
+            store.update(job_id, provider="" if operation == "convert" else options["provider"])
             pipeline = Pipeline(
                 store,
                 progress=lambda jid, message, done, total: queue.put(
@@ -53,6 +57,7 @@ def run_jobs(root: str, job_ids: list[str], options: dict, api_key: str, queue, 
                     options.get("glossary", {}),
                     options["ocr_language"],
                     export_only=options.get("export_only", False),
+                    operation=operation,
                 )
             except Exception as exc:
                 queue.put({"kind": "error", "id": job_id, "message": str(exc)})

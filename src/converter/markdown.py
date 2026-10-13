@@ -11,16 +11,21 @@ def escape(text: str) -> str:
     return re.sub(r"([\\`*_{}\[\]<>#|])", r"\\\1", text).replace("\r", "")
 
 
-def render_markdown(doc: Document, asset_folder: str) -> str:
-    if not doc.complete():
+def render_markdown(doc: Document, asset_folder: str, *, source: bool = False) -> str:
+    if not source and not doc.complete():
         raise ValueError("Còn đoạn chưa dịch; hãy review trước khi xuất Markdown.")
     lookup = doc.by_id()
 
     def inline(block: Block) -> str:
         pieces = []
-        for sid in block.segments:
+        entries = block.meta.get("inline", [{"segment": sid} for sid in block.segments])
+        for entry in entries:
+            if "text" in entry:
+                pieces.append(escape(entry["text"]).replace("\n", "<br>"))
+                continue
+            sid = entry["segment"]
             segment = lookup[sid]
-            text = escape(segment.text)
+            text = escape(segment.source if source else segment.text)
             if not text.strip():
                 pieces.append(text)
                 continue

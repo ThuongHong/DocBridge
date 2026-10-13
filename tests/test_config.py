@@ -45,3 +45,34 @@ def test_context_window_reserves_output_and_prompt_space():
     )
     with pytest.raises(ValueError, match="Context window"):
         profile.validate()
+
+
+def test_docbridge_data_path_reuses_legacy_history_and_prefers_new_overrides(tmp_path, monkeypatch):
+    from converter.config import data_root
+
+    monkeypatch.delenv("DOCBRIDGE_DATA_DIR", raising=False)
+    monkeypatch.delenv("CONVERTER_DATA_DIR", raising=False)
+    monkeypatch.setattr("converter.config.sys.platform", "linux")
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path))
+    assert data_root() == tmp_path / "docbridge"
+    legacy = tmp_path / "converter"
+    legacy.mkdir()
+    (legacy / "preferences.json").write_text('{"language":"vi"}')
+    assert data_root() == legacy
+    monkeypatch.setenv("CONVERTER_DATA_DIR", str(tmp_path / "old-override"))
+    monkeypatch.setenv("DOCBRIDGE_DATA_DIR", str(tmp_path / "new-override"))
+    assert data_root() == tmp_path / "new-override"
+
+
+def test_docbridge_keyring_can_read_old_key_and_delete_both_names(monkeypatch):
+    from converter.config import get_api_key, set_api_key
+
+    values = {("Converter", "translation-api"): "legacy-test-key"}
+    monkeypatch.setattr("keyring.get_password", lambda service, user: values.get((service, user)))
+    monkeypatch.setattr("keyring.set_password", lambda service, user, value: values.update({(service,user):value}))
+    monkeypatch.setattr("keyring.delete_password", lambda service, user: values.pop((service,user), None))
+    assert get_api_key() == "legacy-test-key"
+    set_api_key("new-test-key")
+    assert get_api_key() == "new-test-key"
+    set_api_key("")
+    assert get_api_key() == ""

@@ -19,7 +19,7 @@ for dist in sorted(importlib.metadata.distributions(), key=lambda d: d.metadata.
                 texts.append(path.read_text(encoding="utf-8", errors="replace"))
 for directory in [
     Path("build/argos-packages"),
-    Path(os.environ.get("CONVERTER_BUNDLE_TESSERACT", "assets/tesseract")),
+    Path(os.environ.get("DOCBRIDGE_BUNDLE_TESSERACT", os.environ.get("CONVERTER_BUNDLE_TESSERACT", "assets/tesseract"))),
 ]:
     if directory.exists():
         for path in directory.rglob("*"):

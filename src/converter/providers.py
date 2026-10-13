@@ -5,20 +5,22 @@ import json
 import os
 import re
 import time
+from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
 
 import httpx
 
-from .config import ProviderConfig, data_root, resource_root
+from .config import ProviderConfig, data_root, environment, resource_root
 from .llm_budget import estimate_input_tokens, join_translations, split_source
 from .models import Segment, file_hash
 
 # URLs, product codes and numeric values must survive translation unchanged.
 PROTECTED = re.compile(
     r"https?://[^\s<>]+|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|"
-    r"\b[A-Za-z]+[-_][A-Za-z0-9_-]*\d[A-Za-z0-9_-]*\b|"
-    r"(?<![A-Za-z])\d+(?:[.,:/-]\d+)*(?:%)?"
+    r"(?<![A-Za-z0-9_])[A-Za-z]+[-_][A-Za-z0-9_-]*\d[A-Za-z0-9_-]*(?![A-Za-z0-9_])|"
+    r"(?<![A-Za-z])\d+(?:[.,:/-]\d+)*(?:%|\s*(?:kPa|MPa|Pa|mV|kV|V|mA|A|"
+    r"kHz|MHz|Hz|kW|W|Nm|rpm|mm|cm|km|kg|ms|s|°C|°F|℃)(?![A-Za-z]))?"
 )
 HAN = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
 
@@ -38,7 +40,8 @@ def protection_pattern(glossary: dict) -> re.Pattern:
 
 def signature(kind: str, profile: dict, glossary: dict) -> str:
     payload = json.dumps(
-        {"kind": kind, "profile": profile, "glossary": glossary, "prompt_version": 1},
+        {"kind": kind, "profile": profile, "glossary": glossary,
+         "prompt_version": 4 if kind == "argos" else 3},
         ensure_ascii=False,
         sort_keys=True,
     )
@@ -269,11 +272,27 @@ def preserve_edges(source: str, target: str) -> str:
     return leading + target.strip() + trailing
 
 
+def terminology_acronyms(source: str, values: dict[str, str]) -> tuple[dict, dict]:
+    """Use only unambiguous acronyms already supplied by the glossary."""
+    matches = {key: re.fullmatch(r"(.+) \(([A-Z][A-Z0-9]{1,9})\)", value)
+               for key, value in values.items()}
+    targets = {}
+    for key, match in matches.items():
+        if match:
+            targets.setdefault(match[2], set()).add(values[key])
+    short, expansions = dict(values), {}
+    for key, match in matches.items():
+        if match and match[2] not in source and len(targets[match[2]]) == 1:
+            short[key] = match[2]
+            expansions[match[2]] = values[key]
+    return short, expansions
+
+
 class ArgosProvider:
     batch_chars = 1500
 
     def __init__(self, model_path: str | None = None):
-        self.model_path = model_path or os.environ.get("CONVERTER_ARGOS_MODEL")
+        self.model_path = model_path or environment("ARGOS_MODEL")
         self.translation = None
 
     def fingerprint(self, glossary: dict) -> str:
@@ -309,7 +328,7 @@ class ArgosProvider:
             from argostranslate import package, settings, translate
         except ImportError:
             raise TranslationError(
-                "Bản phát triển chưa cài Argos. Cài converter-desktop[offline] để dùng Offline."
+                "Bản phát triển chưa cài Argos. Cài docbridge-desktop[offline] để dùng Offline."
             ) from None
         bundled = resource_root() / "assets/models"
         settings.package_data_dir = local
@@ -332,9 +351,48 @@ class ArgosProvider:
     def translate(self, segments: list[Segment], glossary: dict) -> dict[str, str]:
         self.prepare()
         results = {}
+
+        def context_candidate(natural, values):
+            candidate = " ".join(
+                self.translation.translate(chunk) for chunk in split_text(natural, 300)
+            )
+            if (not HAN.search(candidate)
+                    and Counter(PROTECTED.findall(candidate)) == Counter(PROTECTED.findall(natural))
+                    and all(candidate.count(value) == natural.count(value)
+                            for value in values.values() if value)):
+                return candidate
+            return None
+
         for segment in segments:
             source = segment.source
+            if not HAN.search(source):
+                results[segment.id] = source
+                continue
             masked, values = protect(source, glossary)
+            natural = restore(masked, values)
+            if not HAN.search(natural):
+                results[segment.id] = natural
+                continue
+            # Translate with the subject and conditions intact. Terminology is
+            # ordinary target-language text, never synthetic placeholder tokens.
+            # Reject any mutation before using the deterministic fragment fallback.
+            candidate = context_candidate(natural, values)
+            if candidate is None:
+                short, expansions = terminology_acronyms(source, values)
+                if expansions:
+                    retry = context_candidate(restore(masked, short), short)
+                    if retry is not None:
+                        for acronym, target in expansions.items():
+                            retry = re.sub(
+                                rf"(?<![A-Za-z0-9_]){re.escape(acronym)}(?![A-Za-z0-9_])",
+                                lambda _, target=target: target, retry,
+                            )
+                        if all(retry.count(value) == natural.count(value)
+                               for value in values.values() if value):
+                            candidate = retry
+            if candidate is not None:
+                results[segment.id] = preserve_edges(source, candidate)
+                continue
             # Do not feed synthetic placeholder tokens into NMT. Translate only natural text
             # around protected values, then assemble them without asking Argos to preserve tags.
             pattern = "(" + "|".join(re.escape(key) for key in values) + ")" if values else None
