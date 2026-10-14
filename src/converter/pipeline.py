@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import tempfile
+from contextlib import closing
 from pathlib import Path
 
 from .markdown import render_markdown
@@ -86,6 +87,9 @@ class Pipeline:
             count += size
         if current:
             batches.append(current)
+        if hasattr(provider, "translate_batches"):
+            # Online provider owns token/output packing and bounded concurrency.
+            batches = [pending] if pending else []
 
         def checkpoint(values):
             for sid, text in values.items():
@@ -114,8 +118,9 @@ class Pipeline:
             ]
             if normal:
                 if hasattr(provider, "translate_batches"):
-                    for part in provider.translate_batches(normal, glossary):
-                        checkpoint(part)
+                    with closing(provider.translate_batches(normal, glossary)) as parts:
+                        for part in parts:
+                            checkpoint(part)
                 else:
                     checkpoint(provider.translate(normal, glossary))
             for segment in batch:

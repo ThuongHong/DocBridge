@@ -13,7 +13,9 @@ from converter.providers import OnlineProvider
 
 def test_online_packs_requests_without_duplicate_context_or_budget_overflow():
     profile = ProviderConfig(
-        endpoint="https://mock.example/v1/chat/completions", model="test", auth_header=""
+        endpoint="https://mock.example/v1/chat/completions", model="test", auth_header="",
+        context_window_tokens=8192, max_output_tokens=4096, token_safety_margin=512,
+        max_concurrent_requests=1,
     )
     calls = []
 
@@ -144,6 +146,7 @@ def test_online_partial_requests_are_checkpointed_before_pause(word_file, store)
     provider = OnlineProvider(ProviderConfig(
         endpoint="https://mock.example/v1/chat/completions", model="test", auth_header="",
         context_window_tokens=2400, max_output_tokens=800, token_safety_margin=200,
+        batch_chars=100, max_concurrent_requests=1,
     ), "", client=httpx.Client(transport=httpx.MockTransport(handler)))
     with pytest.raises(Paused):
         Pipeline(store).translate(job, provider, {}, "eng")

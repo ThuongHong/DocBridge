@@ -1,0 +1,862 @@
+{
+  "corpus_pages": 449,
+  "full_documents": [
+    {
+      "id": "bosch-kt660-zh",
+      "source_sha256": "abe01d5dabfaa2aab0c62c5cab739c78921f7b4e677857261c9a1e9f0f08df0d",
+      "adapter_version": 5,
+      "pages": 24,
+      "segments": 1452,
+      "tables": 17,
+      "assets": 64,
+      "parse_seconds": 32.03950070000428,
+      "linux_process_peak_rss_kib": 156556
+    },
+    {
+      "id": "byd-seal-zh",
+      "source_sha256": "e0fca95e1ed5c81b20b976d878496bf28ae4646c022e97852eac3a5d1fb6b8d0",
+      "adapter_version": 5,
+      "pages": 281,
+      "segments": 5696,
+      "tables": 329,
+      "assets": 395,
+      "parse_seconds": 141.82624323100026,
+      "linux_process_peak_rss_kib": 150396
+    },
+    {
+      "id": "mee-vehicle-protocol-draft-zh",
+      "source_sha256": "28c51a70cbab6e65ba9f50e3804ad9a73f39be876159cfde194dcc97710b217e",
+      "adapter_version": 5,
+      "pages": 14,
+      "segments": 685,
+      "tables": 20,
+      "assets": 1,
+      "parse_seconds": 2.2553408429957926,
+      "linux_process_peak_rss_kib": 76224
+    },
+    {
+      "id": "ti-tcan1575-zh",
+      "source_sha256": "db1e300b4d7a0abdc221d0e27358a90e7873fda7b2251dc29e661e03b6806f23",
+      "adapter_version": 5,
+      "pages": 130,
+      "segments": 10731,
+      "tables": 340,
+      "assets": 9,
+      "parse_seconds": 49.481446236997726,
+      "linux_process_peak_rss_kib": 203896
+    }
+  ],
+  "regression_tests": {
+    "passed": 148,
+    "skipped": 1
+  },
+  "frozen_gold": {
+    "passed": 38,
+    "total": 38
+  },
+  "source_fingerprint": {
+    "commit": "2103fcc8400f84ccde3d38d5919cb0c1938dbdf8",
+    "python": "3.12.13",
+    "final_source_hashes": {
+      "src/converter/pdf.py": "95ddb68469b70a7835134c1e93d7c79537283c156b54dcf6741c40d84d919bdf",
+      "src/converter/pdf_layout.py": "a6e91da45e1f1e28c93937228a3caf018a53f722549356ca31e894e60e18e19e",
+      "src/converter/markdown.py": "f3cda844cafe775155fef843a48cf70728d7f41df1b88e900b7b4a3a07139c52"
+    }
+  },
+  "translation_invoked": false,
+  "engines": {
+    "baseline": {
+      "files": [
+        {
+          "id": "bosch-kt660-zh",
+          "sha256": "0226b711d3136e846f862f1762ce4b25b6b9145e8855a0d643c1febe4f73e324",
+          "seconds": 6.565309899000567,
+          "peak_rss_kib": 91020
+        },
+        {
+          "id": "byd-seal-zh",
+          "sha256": "ca2110eb66e7c529dbf4605b905738ca86e929f3aa3213b5cf3608c723d9c24b",
+          "seconds": 1.500278078005067,
+          "peak_rss_kib": 80072
+        },
+        {
+          "id": "mee-vehicle-protocol-draft-zh",
+          "sha256": "70db97203eff9b0f800f3032203a70868f9381547173a171a43877eddc59b961",
+          "seconds": 0.304106530995341,
+          "peak_rss_kib": 47212
+        },
+        {
+          "id": "ti-tcan1575-zh",
+          "sha256": "fb9508ad8043fdc4159c9938b600689219249b957fe1a30922e7abbd2f1a3b8a",
+          "seconds": 0.7660390640085097,
+          "peak_rss_kib": 51368
+        }
+      ],
+      "total_seconds": 9.135733572009485,
+      "peak_process_rss_kib": 91020,
+      "gold": {
+        "engine": "docbridge",
+        "passed": 25,
+        "total": 38,
+        "cases": [
+          {
+            "id": "bosch-columns",
+            "passed": false
+          },
+          {
+            "id": "bosch-no-cross-column-sentence",
+            "passed": false
+          },
+          {
+            "id": "bosch-heading",
+            "passed": true
+          },
+          {
+            "id": "bosch-overprint",
+            "passed": false
+          },
+          {
+            "id": "bosch-warning-table",
+            "passed": true
+          },
+          {
+            "id": "bosch-safety-order",
+            "passed": false
+          },
+          {
+            "id": "bosch-delay-number",
+            "passed": true
+          },
+          {
+            "id": "bosch-diagnostic-order",
+            "passed": false
+          },
+          {
+            "id": "bosch-diagnostic-step",
+            "passed": false
+          },
+          {
+            "id": "ti-range-columns",
+            "passed": false
+          },
+          {
+            "id": "ti-recessive-range",
+            "passed": false
+          },
+          {
+            "id": "ti-typical-column",
+            "passed": false
+          },
+          {
+            "id": "ti-common-mode-sign",
+            "passed": false
+          },
+          {
+            "id": "ti-leakage-sign",
+            "passed": false
+          },
+          {
+            "id": "ti-pullup-columns",
+            "passed": false
+          },
+          {
+            "id": "ti-native-source-condition",
+            "passed": true
+          },
+          {
+            "id": "ti-wakeup-id",
+            "passed": true
+          },
+          {
+            "id": "ti-register-code",
+            "passed": true
+          },
+          {
+            "id": "ti-rate",
+            "passed": true
+          },
+          {
+            "id": "ti-ide-row",
+            "passed": true
+          },
+          {
+            "id": "ti-register-reset",
+            "passed": true
+          },
+          {
+            "id": "byd-open-cell-name",
+            "passed": false
+          },
+          {
+            "id": "byd-open-cell-pressure",
+            "passed": true
+          },
+          {
+            "id": "byd-recorder-code",
+            "passed": true
+          },
+          {
+            "id": "byd-childlock-order",
+            "passed": true
+          },
+          {
+            "id": "byd-childlock-body",
+            "passed": true
+          },
+          {
+            "id": "byd-tire-distance",
+            "passed": true
+          },
+          {
+            "id": "byd-tire-order",
+            "passed": true
+          },
+          {
+            "id": "mee-command-row",
+            "passed": true
+          },
+          {
+            "id": "mee-speed-type",
+            "passed": true
+          },
+          {
+            "id": "mee-speed-scale",
+            "passed": true
+          },
+          {
+            "id": "mee-speed-maximum",
+            "passed": true
+          },
+          {
+            "id": "mee-pressure-type",
+            "passed": true
+          },
+          {
+            "id": "mee-pressure-scale",
+            "passed": true
+          },
+          {
+            "id": "mee-torque-sign",
+            "passed": true
+          },
+          {
+            "id": "mee-rpm-type",
+            "passed": true
+          },
+          {
+            "id": "mee-rpm-scale",
+            "passed": true
+          },
+          {
+            "id": "mee-temperature-sign",
+            "passed": true
+          }
+        ]
+      }
+    },
+    "docbridge": {
+      "files": [
+        {
+          "id": "bosch-kt660-zh",
+          "sha256": "0226b711d3136e846f862f1762ce4b25b6b9145e8855a0d643c1febe4f73e324",
+          "seconds": 6.77367807799601,
+          "peak_rss_kib": 90900
+        },
+        {
+          "id": "byd-seal-zh",
+          "sha256": "ca2110eb66e7c529dbf4605b905738ca86e929f3aa3213b5cf3608c723d9c24b",
+          "seconds": 1.619563428001129,
+          "peak_rss_kib": 80112
+        },
+        {
+          "id": "mee-vehicle-protocol-draft-zh",
+          "sha256": "70db97203eff9b0f800f3032203a70868f9381547173a171a43877eddc59b961",
+          "seconds": 0.47230193800351117,
+          "peak_rss_kib": 47232
+        },
+        {
+          "id": "ti-tcan1575-zh",
+          "sha256": "fb9508ad8043fdc4159c9938b600689219249b957fe1a30922e7abbd2f1a3b8a",
+          "seconds": 1.2046500760043273,
+          "peak_rss_kib": 51704
+        }
+      ],
+      "total_seconds": 10.070193520004977,
+      "peak_process_rss_kib": 90900,
+      "gold": {
+        "engine": "docbridge",
+        "passed": 38,
+        "total": 38,
+        "cases": [
+          {
+            "id": "bosch-columns",
+            "passed": true
+          },
+          {
+            "id": "bosch-no-cross-column-sentence",
+            "passed": true
+          },
+          {
+            "id": "bosch-heading",
+            "passed": true
+          },
+          {
+            "id": "bosch-overprint",
+            "passed": true
+          },
+          {
+            "id": "bosch-warning-table",
+            "passed": true
+          },
+          {
+            "id": "bosch-safety-order",
+            "passed": true
+          },
+          {
+            "id": "bosch-delay-number",
+            "passed": true
+          },
+          {
+            "id": "bosch-diagnostic-order",
+            "passed": true
+          },
+          {
+            "id": "bosch-diagnostic-step",
+            "passed": true
+          },
+          {
+            "id": "ti-range-columns",
+            "passed": true
+          },
+          {
+            "id": "ti-recessive-range",
+            "passed": true
+          },
+          {
+            "id": "ti-typical-column",
+            "passed": true
+          },
+          {
+            "id": "ti-common-mode-sign",
+            "passed": true
+          },
+          {
+            "id": "ti-leakage-sign",
+            "passed": true
+          },
+          {
+            "id": "ti-pullup-columns",
+            "passed": true
+          },
+          {
+            "id": "ti-native-source-condition",
+            "passed": true
+          },
+          {
+            "id": "ti-wakeup-id",
+            "passed": true
+          },
+          {
+            "id": "ti-register-code",
+            "passed": true
+          },
+          {
+            "id": "ti-rate",
+            "passed": true
+          },
+          {
+            "id": "ti-ide-row",
+            "passed": true
+          },
+          {
+            "id": "ti-register-reset",
+            "passed": true
+          },
+          {
+            "id": "byd-open-cell-name",
+            "passed": true
+          },
+          {
+            "id": "byd-open-cell-pressure",
+            "passed": true
+          },
+          {
+            "id": "byd-recorder-code",
+            "passed": true
+          },
+          {
+            "id": "byd-childlock-order",
+            "passed": true
+          },
+          {
+            "id": "byd-childlock-body",
+            "passed": true
+          },
+          {
+            "id": "byd-tire-distance",
+            "passed": true
+          },
+          {
+            "id": "byd-tire-order",
+            "passed": true
+          },
+          {
+            "id": "mee-command-row",
+            "passed": true
+          },
+          {
+            "id": "mee-speed-type",
+            "passed": true
+          },
+          {
+            "id": "mee-speed-scale",
+            "passed": true
+          },
+          {
+            "id": "mee-speed-maximum",
+            "passed": true
+          },
+          {
+            "id": "mee-pressure-type",
+            "passed": true
+          },
+          {
+            "id": "mee-pressure-scale",
+            "passed": true
+          },
+          {
+            "id": "mee-torque-sign",
+            "passed": true
+          },
+          {
+            "id": "mee-rpm-type",
+            "passed": true
+          },
+          {
+            "id": "mee-rpm-scale",
+            "passed": true
+          },
+          {
+            "id": "mee-temperature-sign",
+            "passed": true
+          }
+        ]
+      }
+    },
+    "docling": {
+      "versions": {
+        "docling-slim": "2.138.0",
+        "docling-core": "2.101.1",
+        "docling-parse": "7.22.3",
+        "docling-ibm-models": "4.0.3",
+        "torch": "2.5.1+cpu",
+        "torchvision": "0.20.1+cpu",
+        "transformers": "4.57.6"
+      },
+      "setup_seconds": 7.976419091006392,
+      "files": [
+        {
+          "id": "bosch-kt660-zh",
+          "sha256": "0226b711d3136e846f862f1762ce4b25b6b9145e8855a0d643c1febe4f73e324",
+          "seconds": 28.24179502799234,
+          "peak_rss_kib": 1507520
+        },
+        {
+          "id": "ti-tcan1575-zh",
+          "sha256": "fb9508ad8043fdc4159c9938b600689219249b957fe1a30922e7abbd2f1a3b8a",
+          "seconds": 36.704381722986,
+          "peak_rss_kib": 1718308
+        },
+        {
+          "id": "byd-seal-zh",
+          "sha256": "ca2110eb66e7c529dbf4605b905738ca86e929f3aa3213b5cf3608c723d9c24b",
+          "seconds": 25.627273316000355,
+          "peak_rss_kib": 1737332
+        },
+        {
+          "id": "mee-vehicle-protocol-draft-zh",
+          "sha256": "70db97203eff9b0f800f3032203a70868f9381547173a171a43877eddc59b961",
+          "seconds": 24.537942149006994,
+          "peak_rss_kib": 1737332
+        }
+      ],
+      "total_seconds": 115.11139221598569,
+      "peak_process_rss_kib": 1737332,
+      "gold": {
+        "engine": "docling",
+        "passed": 36,
+        "total": 38,
+        "cases": [
+          {
+            "id": "bosch-columns",
+            "passed": true
+          },
+          {
+            "id": "bosch-no-cross-column-sentence",
+            "passed": true
+          },
+          {
+            "id": "bosch-heading",
+            "passed": true
+          },
+          {
+            "id": "bosch-overprint",
+            "passed": true
+          },
+          {
+            "id": "bosch-warning-table",
+            "passed": true
+          },
+          {
+            "id": "bosch-safety-order",
+            "passed": false
+          },
+          {
+            "id": "bosch-delay-number",
+            "passed": true
+          },
+          {
+            "id": "bosch-diagnostic-order",
+            "passed": true
+          },
+          {
+            "id": "bosch-diagnostic-step",
+            "passed": true
+          },
+          {
+            "id": "ti-range-columns",
+            "passed": true
+          },
+          {
+            "id": "ti-recessive-range",
+            "passed": true
+          },
+          {
+            "id": "ti-typical-column",
+            "passed": false
+          },
+          {
+            "id": "ti-common-mode-sign",
+            "passed": true
+          },
+          {
+            "id": "ti-leakage-sign",
+            "passed": true
+          },
+          {
+            "id": "ti-pullup-columns",
+            "passed": true
+          },
+          {
+            "id": "ti-native-source-condition",
+            "passed": true
+          },
+          {
+            "id": "ti-wakeup-id",
+            "passed": true
+          },
+          {
+            "id": "ti-register-code",
+            "passed": true
+          },
+          {
+            "id": "ti-rate",
+            "passed": true
+          },
+          {
+            "id": "ti-ide-row",
+            "passed": true
+          },
+          {
+            "id": "ti-register-reset",
+            "passed": true
+          },
+          {
+            "id": "byd-open-cell-name",
+            "passed": true
+          },
+          {
+            "id": "byd-open-cell-pressure",
+            "passed": true
+          },
+          {
+            "id": "byd-recorder-code",
+            "passed": true
+          },
+          {
+            "id": "byd-childlock-order",
+            "passed": true
+          },
+          {
+            "id": "byd-childlock-body",
+            "passed": true
+          },
+          {
+            "id": "byd-tire-distance",
+            "passed": true
+          },
+          {
+            "id": "byd-tire-order",
+            "passed": true
+          },
+          {
+            "id": "mee-command-row",
+            "passed": true
+          },
+          {
+            "id": "mee-speed-type",
+            "passed": true
+          },
+          {
+            "id": "mee-speed-scale",
+            "passed": true
+          },
+          {
+            "id": "mee-speed-maximum",
+            "passed": true
+          },
+          {
+            "id": "mee-pressure-type",
+            "passed": true
+          },
+          {
+            "id": "mee-pressure-scale",
+            "passed": true
+          },
+          {
+            "id": "mee-torque-sign",
+            "passed": true
+          },
+          {
+            "id": "mee-rpm-type",
+            "passed": true
+          },
+          {
+            "id": "mee-rpm-scale",
+            "passed": true
+          },
+          {
+            "id": "mee-temperature-sign",
+            "passed": true
+          }
+        ]
+      }
+    },
+    "mineru": {
+      "versions": {
+        "mineru": "4.0.12",
+        "docvortex": "0.5.16",
+        "onnxruntime": "1.31.0"
+      },
+      "tier": "basic",
+      "ocr_mode": "txt",
+      "files": [
+        {
+          "id": "bosch-kt660-zh",
+          "sha256": "0226b711d3136e846f862f1762ce4b25b6b9145e8855a0d643c1febe4f73e324",
+          "seconds": 20.32166143799259,
+          "peak_rss_kib": 1455000
+        },
+        {
+          "id": "byd-seal-zh",
+          "sha256": "ca2110eb66e7c529dbf4605b905738ca86e929f3aa3213b5cf3608c723d9c24b",
+          "seconds": 5.982072735001566,
+          "peak_rss_kib": 1678992
+        },
+        {
+          "id": "mee-vehicle-protocol-draft-zh",
+          "sha256": "70db97203eff9b0f800f3032203a70868f9381547173a171a43877eddc59b961",
+          "seconds": 5.605260301003,
+          "peak_rss_kib": 1694400
+        },
+        {
+          "id": "ti-tcan1575-zh",
+          "sha256": "fb9508ad8043fdc4159c9938b600689219249b957fe1a30922e7abbd2f1a3b8a",
+          "seconds": 7.064106536010513,
+          "peak_rss_kib": 1767944
+        }
+      ],
+      "total_seconds": 38.97310101000767,
+      "peak_process_rss_kib": 1767944,
+      "gold": {
+        "engine": "mineru",
+        "passed": 31,
+        "total": 38,
+        "cases": [
+          {
+            "id": "bosch-columns",
+            "passed": true
+          },
+          {
+            "id": "bosch-no-cross-column-sentence",
+            "passed": true
+          },
+          {
+            "id": "bosch-heading",
+            "passed": true
+          },
+          {
+            "id": "bosch-overprint",
+            "passed": true
+          },
+          {
+            "id": "bosch-warning-table",
+            "passed": true
+          },
+          {
+            "id": "bosch-safety-order",
+            "passed": true
+          },
+          {
+            "id": "bosch-delay-number",
+            "passed": true
+          },
+          {
+            "id": "bosch-diagnostic-order",
+            "passed": true
+          },
+          {
+            "id": "bosch-diagnostic-step",
+            "passed": true
+          },
+          {
+            "id": "ti-range-columns",
+            "passed": false
+          },
+          {
+            "id": "ti-recessive-range",
+            "passed": false
+          },
+          {
+            "id": "ti-typical-column",
+            "passed": false
+          },
+          {
+            "id": "ti-common-mode-sign",
+            "passed": false
+          },
+          {
+            "id": "ti-leakage-sign",
+            "passed": false
+          },
+          {
+            "id": "ti-pullup-columns",
+            "passed": false
+          },
+          {
+            "id": "ti-native-source-condition",
+            "passed": false
+          },
+          {
+            "id": "ti-wakeup-id",
+            "passed": true
+          },
+          {
+            "id": "ti-register-code",
+            "passed": true
+          },
+          {
+            "id": "ti-rate",
+            "passed": true
+          },
+          {
+            "id": "ti-ide-row",
+            "passed": true
+          },
+          {
+            "id": "ti-register-reset",
+            "passed": true
+          },
+          {
+            "id": "byd-open-cell-name",
+            "passed": true
+          },
+          {
+            "id": "byd-open-cell-pressure",
+            "passed": true
+          },
+          {
+            "id": "byd-recorder-code",
+            "passed": true
+          },
+          {
+            "id": "byd-childlock-order",
+            "passed": true
+          },
+          {
+            "id": "byd-childlock-body",
+            "passed": true
+          },
+          {
+            "id": "byd-tire-distance",
+            "passed": true
+          },
+          {
+            "id": "byd-tire-order",
+            "passed": true
+          },
+          {
+            "id": "mee-command-row",
+            "passed": true
+          },
+          {
+            "id": "mee-speed-type",
+            "passed": true
+          },
+          {
+            "id": "mee-speed-scale",
+            "passed": true
+          },
+          {
+            "id": "mee-speed-maximum",
+            "passed": true
+          },
+          {
+            "id": "mee-pressure-type",
+            "passed": true
+          },
+          {
+            "id": "mee-pressure-scale",
+            "passed": true
+          },
+          {
+            "id": "mee-torque-sign",
+            "passed": true
+          },
+          {
+            "id": "mee-rpm-type",
+            "passed": true
+          },
+          {
+            "id": "mee-rpm-scale",
+            "passed": true
+          },
+          {
+            "id": "mee-temperature-sign",
+            "passed": true
+          }
+        ]
+      }
+    }
+  },
+  "benchmark_scope": "11 selected native-text pages, 38 source assertions; fresh process with cached models, sequential engines, no competing parser/build. Not universal accuracy.",
+  "machine": {
+    "os": "Linux 7.2.8-2-cachyos x86_64",
+    "cpu": "Intel Core i5-13500H",
+    "python": "3.12.13"
+  },
+  "sample_hashes": {
+    "bosch-kt660-zh": "0226b711d3136e846f862f1762ce4b25b6b9145e8855a0d643c1febe4f73e324",
+    "byd-seal-zh": "ca2110eb66e7c529dbf4605b905738ca86e929f3aa3213b5cf3608c723d9c24b",
+    "mee-vehicle-protocol-draft-zh": "70db97203eff9b0f800f3032203a70868f9381547173a171a43877eddc59b961",
+    "ti-tcan1575-zh": "fb9508ad8043fdc4159c9938b600689219249b957fe1a30922e7abbd2f1a3b8a"
+  },
+  "package": {
+    "installed_bytes": 1434425544,
+    "limit_bytes": 2000000000,
+    "platform": "Linux x86_64",
+    "offline_components_included": true,
+    "reference_engines_included": false,
+    "frozen_blocks_segments_match_development": true
+  }
+}

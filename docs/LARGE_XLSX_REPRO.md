@@ -2,7 +2,7 @@
 
 Tested locally on 2026-10-13 with Argos Translate 1.9.6, the existing
 Chinese-English 1.9 package, CPU inference, and Python network connections
-disabled. No online translation or Qwen inference was used.
+disabled. No online translation or external LLM inference was used.
 
 ## Fixture
 

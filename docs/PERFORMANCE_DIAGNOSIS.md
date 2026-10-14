@@ -1,9 +1,69 @@
 # Translation performance diagnosis
 
+## 2026-10-14 online scheduling update
+
+Online translation now packs across the whole pending document, bounded by
+character count, estimated input context and estimated output capacity. Defaults
+for a new profile are 30,000 characters, 16,384 output tokens, 131,072 context
+tokens, a 1,024-token safety reserve and three concurrent requests. These are
+editable in Settings; users must enter limits actually supported by their service.
+Endpoint and model defaults remain blank. No provider-specific name is shipped.
+
+The tokenizer estimate uses 1.5 tokens per common CJK character, approximate
+ASCII word/digit runs, and byte accounting for other symbols/escapes. It includes
+JSON/prompt framing. This is a heuristic, not an exact vendor tokenizer. Actual
+context errors and truncated responses still trigger recursive splitting while
+preserving segment IDs, glossary placeholders and source text. Output budgeting
+can make a batch smaller than the configured character limit.
+
+A bounded ThreadPoolExecutor runs HTTP requests only. Completed sub-request
+results return through a bounded queue to the pipeline caller, which alone
+updates document targets, SQLite state, progress and atomic checkpoints. Responses
+may complete out of order; segment IDs preserve document placement. Pause/error
+closes the generator, stops further requests/retries and joins workers. An
+already-running HTTP call can take until its configured timeout to finish; pause
+does not forcibly abort a socket. Retry sleeps check cancellation in short steps.
+Concurrency is configurable from 1 to 8; use 1 for services with strict rate
+limits. Changing concurrency alone preserves legacy online fingerprints.
+Changing other provider/budget settings follows existing resume compatibility
+checks; historical exports remain available. Existing saved settings are not
+silently replaced by new public defaults. The current local profile was updated
+separately, preserving its service identity and keeping a private local backup.
+
+Windows-style transient checkpoint file locks now get five bounded replace
+attempts. A simulated PermissionError regression verifies the old file remains
+intact until replacement succeeds. This is not a Windows runtime validation.
+Argos reuse and its CPU inference policy remain unchanged by this update.
+
+### Same-input local HTTP benchmark
+
+300 segments, 72,000 Chinese source characters, cached parsing, a local threaded
+HTTP server with 100 ms simulated response latency and identical echo responses.
+No real translation service or inference was called. Engines ran sequentially
+without a competing build; translation timing includes packing/checkpoint writes.
+
+| Variant | Requests | Peak concurrent requests | Seconds |
+| --- | ---: | ---: | ---: |
+| Previous code/defaults | 100 | 1 | 11.917 |
+| New packing/defaults, concurrency 1 | 10 | 1 | 1.317 |
+| New packing/defaults, concurrency 3 | 10 | 3 | 0.603 |
+
+This verifies reduced request overhead and overlap; it does **not** establish a
+20x speedup for real LLM inference. Provider token throughput, rate limits,
+translation length and retries determine actual performance.
+
+The freshly built frozen app used the same local HTTP fixture: 10 requests,
+peak concurrency 3, worker exit 0, all 300 segment targets matched expected
+responses and Markdown exported successfully. Regression suite: **154 passed,
+1 skipped**. See [ONLINE_PERFORMANCE_RESULTS.json](ONLINE_PERFORMANCE_RESULTS.json)
+for measurements. Older sections below describe previous implementations.
+
+
+
 Measured on 2026-10-13 against commit `18ab932`, on Linux with an Intel
 i5-13500H, Argos Translate 1.9.6, and the existing Chinese-English model.
 The diagnosis below describes that baseline; the implementation results at the
-end describe the subsequent optimization. No paid API calls or Qwen inference
+end describe the subsequent optimization. No paid API calls or external LLM inference
 were performed.
 
 ## Where the time goes

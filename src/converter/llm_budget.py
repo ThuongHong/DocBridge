@@ -5,10 +5,21 @@ import re
 
 
 def estimate_input_tokens(messages: list[dict]) -> int:
-    # A UTF-8 byte count overestimates common byte/BPE tokenizers, including JSON
-    # escaping and chat framing. It is an estimate, not a vendor tokenizer oracle.
-    encoded = json.dumps(messages, ensure_ascii=False).encode("utf-8")
-    return len(encoded) + 64 + 32 * len(messages)
+    # Approximate an unknown tokenizer with headroom for technical Chinese.
+    # JSON escaping/framing is included. Provider context errors still split.
+    text = json.dumps(messages, ensure_ascii=False)
+    units = 0
+    for part in re.findall(r"[\u3400-\u9fff\uf900-\ufaff]+|[A-Za-z ]+|[0-9]+|[^\u3400-\u9fff\uf900-\ufaffA-Za-z 0-9]+", text):
+        first = part[0]
+        if "\u3400" <= first <= "\u9fff" or "\uf900" <= first <= "\ufaff":
+            units += len(part) * 1.5
+        elif first.isascii() and (first.isalpha() or first == " "):
+            units += (len(part) + 2) // 3
+        elif first.isascii() and first.isdigit():
+            units += (len(part) + 1) // 2
+        else:
+            units += len(part.encode("utf-8"))
+    return int(units + .999) + 64 + 32 * len(messages)
 
 
 def split_source(source: str, protected_pattern: re.Pattern) -> tuple[str, str] | None:

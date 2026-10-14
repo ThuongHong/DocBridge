@@ -154,6 +154,7 @@ def test_online_settings_save_api_url_model_and_custom_auth(store, tmp_path, mon
     window.timeout_spin.setValue(240)
     window.context_window_spin.setValue(32768)
     window.token_margin_spin.setValue(1024)
+    window.concurrent_spin.setValue(2)
     assert window.save_provider_settings(True)
     assert window.profile.endpoint == "https://example.com/openai/v1/chat/completions"
     assert window.provider_combo.itemText(0) == "Company API"
@@ -168,6 +169,7 @@ def test_online_settings_save_api_url_model_and_custom_auth(store, tmp_path, mon
     assert reopened.timeout_spin.value() == 240
     assert reopened.context_window_spin.value() == 32768
     assert reopened.token_margin_spin.value() == 1024
+    assert reopened.concurrent_spin.value() == 2
     reopened.auth_enabled.setChecked(False)
     assert reopened.save_provider_settings(True)
     assert reopened.profile.auth_header == ""

@@ -47,7 +47,9 @@ def render_markdown(doc: Document, asset_folder: str, *, source: bool = False) -
     def render(block: Block) -> str:
         if block.kind == "section":
             title = escape(block.meta.get("title", ""))
-            return f"## {title}\n\n" + "\n\n".join(render(child) for child in block.children)
+            children = [child for child in block.children
+                        if child.meta.get("role") not in {"page_header", "page_footer"}]
+            return f"## {title}\n\n" + "\n\n".join(render(child) for child in children)
         if block.kind == "heading":
             return "#" * block.meta.get("level", 1) + " " + inline(block)
         if block.kind == "list":

@@ -1,0 +1,94 @@
+{
+  "purpose": "Chinese automotive PDF extraction before LLM translation",
+  "documents": [
+    {
+      "id": "bosch-kt660-zh",
+      "title": "Bosch KT660 用户手册",
+      "url": "https://mediathek-bosch-automotive.com/files/bosch_wa/1697/021652.pdf",
+      "retrieved_date": "2026-10-13",
+      "bytes": 4965073,
+      "sha256": "abe01d5dabfaa2aab0c62c5cab739c78921f7b4e677857261c9a1e9f0f08df0d",
+      "pages": 24,
+      "pages_with_over_50_han_characters": 22,
+      "has_native_text": true,
+      "natural_scan_verified": false,
+      "inspect_pages_one_based": [
+        3,
+        5,
+        16,
+        18,
+        23
+      ],
+      "local_path": ".test-data/automotive-pdf/sources/bosch-kt660-zh.pdf"
+    },
+    {
+      "id": "ti-tcan1575-zh",
+      "title": "TCAN157x-Q1 汽车 CAN FD SIC 收发器",
+      "url": "https://www.ti.com.cn/cn/lit/gpn/TCAN1575-Q1",
+      "retrieved_date": "2026-10-13",
+      "bytes": 5006021,
+      "sha256": "db1e300b4d7a0abdc221d0e27358a90e7873fda7b2251dc29e661e03b6806f23",
+      "pages": 130,
+      "pages_with_over_50_han_characters": 93,
+      "has_native_text": true,
+      "natural_scan_verified": false,
+      "inspect_pages_one_based": [
+        1,
+        6,
+        7,
+        8,
+        9,
+        42,
+        74,
+        100
+      ],
+      "local_path": ".test-data/automotive-pdf/sources/ti-tcan1575-zh.pdf"
+    },
+    {
+      "id": "byd-seal-zh",
+      "title": "BYD SEAL 中文用户手册 11/2023",
+      "url": "https://www.bydauto.co.nz/storage/uploads/22cbd3dd-3405-4ab0-8565-428bb7199856/BYD-SEAL-OWNER%E2%80%98s-MANUAL-CH_11_2023_web.pdf",
+      "retrieved_date": "2026-10-13",
+      "bytes": 4479108,
+      "sha256": "e0fca95e1ed5c81b20b976d878496bf28ae4646c022e97852eac3a5d1fb6b8d0",
+      "pages": 281,
+      "pages_with_over_50_han_characters": 255,
+      "has_native_text": true,
+      "natural_scan_verified": false,
+      "inspect_pages_one_based": [
+        5,
+        45,
+        80,
+        200,
+        250
+      ],
+      "local_path": ".test-data/automotive-pdf/sources/byd-seal-zh.pdf"
+    },
+    {
+      "id": "mee-vehicle-protocol-draft-zh",
+      "title": "重型车远程排放监控技术规范 第4部分 通讯协议及数据格式（征求意见稿）",
+      "url": "https://www.mee.gov.cn/xxgk2018/xxgk/xxgk06/202004/W020200423368281427405.pdf",
+      "retrieved_date": "2026-10-13",
+      "bytes": 863065,
+      "sha256": "28c51a70cbab6e65ba9f50e3804ad9a73f39be876159cfde194dcc97710b217e",
+      "pages": 14,
+      "pages_with_over_50_han_characters": 14,
+      "has_native_text": true,
+      "natural_scan_verified": false,
+      "inspect_pages_one_based": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "local_path": ".test-data/automotive-pdf/sources/mee-vehicle-protocol-draft-zh.pdf"
+    }
+  ],
+  "excluded": [
+    {
+      "id": "ti-tcan4550-zh",
+      "reason": "Downloaded144page revision mostly English; only5pages have>50Han characters. Excluded from primary Chinese corpus.",
+      "sha256": "d1db674011b06bf231bcb32531876323ba236132000ce5c7c827b27a5f511b69"
+    }
+  ]
+}

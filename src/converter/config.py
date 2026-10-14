@@ -39,12 +39,13 @@ class ProviderConfig:
     model: str = ""
     auth_header: str = "Authorization"
     auth_prefix: str = "Bearer "
-    batch_chars: int = 6000
-    max_output_tokens: int = 4096
+    batch_chars: int = 30000
+    max_output_tokens: int = 16384
     timeout_seconds: int = 120
     retries: int = 3
-    context_window_tokens: int = 8192
-    token_safety_margin: int = 512
+    context_window_tokens: int = 131072
+    token_safety_margin: int = 1024
+    max_concurrent_requests: int = 3
 
     @classmethod
     def load(cls, path: Path | None = None) -> ProviderConfig:
@@ -78,6 +79,8 @@ class ProviderConfig:
             raise ValueError("Endpoint phải dùng HTTPS (HTTP chỉ dành cho dịch vụ trên máy).")
         if not parsed.path.rstrip("/").endswith("/chat/completions"):
             raise ValueError("Endpoint phải là URL đầy đủ tới /v1/chat/completions.")
+        if not 1 <= self.max_concurrent_requests <= 8:
+            raise ValueError("Số request đồng thời phải từ 1 đến 8.")
         if self.batch_chars < 100 or self.retries < 0:
             raise ValueError("Cấu hình batch/retry không hợp lệ.")
         if self.max_output_tokens < 1 or self.timeout_seconds < 1:

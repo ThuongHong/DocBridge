@@ -23,7 +23,7 @@ checkpoints so translation can resume and reviewed results can be exported again
 flowchart LR
     UI["Desktop UI<br/>ui.py"]
     Pipeline["Background workflow<br/>pipeline.py"]
-    Parse["Extract text / layout / OCR<br/>office.py · pdf.py"]
+    Parse["Extract text / tables / reading order / OCR<br/>office.py · pdf.py"]
     Translate["Translate: Argos or online API<br/>providers.py"]
     Export["Export<br/>Office · Markdown + images"]
     Store[("Local history and checkpoints")]
@@ -40,7 +40,15 @@ flowchart LR
 Settings are saved separately from jobs; provider configuration contains no API
 key. Keys use the operating system keyring or remain in memory for the session.
 Online translation sends extracted text to the configured endpoint; Argos runs
-locally. PDF extraction currently uses the PDF/OCR adapter shown above.
+locally. PDF extraction uses native text and table geometry, with Tesseract for image text.
+Reading order, recovered table cells and source anchors feed the same saved
+document model. See [automotive parser validation](docs/PDF_PARSER_VALIDATION.md)
+for the direct Docling/MinerU comparison, timings and remaining scan limits.
+
+Online Settings exposes context/output limits, batch size and concurrent requests
+(1–8, default 3). Enter the limits supported by your service. Batches reserve
+output space and completed requests checkpoint immediately; see
+[online performance measurements](docs/PERFORMANCE_DIAGNOSIS.md#2026-10-14-online-scheduling-update).
 
 Translation exports automatically when complete. **Convert to Markdown** bypasses
 translation providers, reads source text even when a translation already exists,

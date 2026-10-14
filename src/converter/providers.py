@@ -4,10 +4,13 @@ import hashlib
 import json
 import os
 import re
+import threading
 import time
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from pathlib import Path
+from queue import Empty, Queue
 
 import httpx
 
@@ -92,12 +95,34 @@ class OnlineProvider:
         self.sleep = sleep
         self.batch_chars = config.batch_chars
         self.control = lambda: None
+        self._workers = threading.local()
 
     def set_control(self, control):
         self.control = control
 
+    def _check_control(self):
+        stop = getattr(self._workers, "stop", None)
+        if stop is not None and stop.is_set():
+            raise TranslationError("Translation batch stopped.")
+        self.control()
+
+    def _retry_wait(self, seconds):
+        if self.sleep is not time.sleep:
+            self.sleep(seconds)
+            self._check_control()
+            return
+        end = time.monotonic() + seconds
+        while time.monotonic() < end:
+            self._check_control()
+            self.sleep(min(.1, max(0, end - time.monotonic())))
+        self._check_control()
+
     def fingerprint(self, glossary: dict) -> str:
-        return signature("online", asdict(self.config), glossary)
+        profile = asdict(self.config)
+        # Changing scheduling alone does not change translation semantics or
+        # invalidate fingerprints saved before concurrency was configurable.
+        profile.pop("max_concurrent_requests")
+        return signature("online", profile, glossary)
 
     def close(self):
         self.client.close()
@@ -105,7 +130,7 @@ class OnlineProvider:
     def request(self, messages: list[dict]) -> str:
         config = self.config
         for attempt in range(config.retries + 1):
-            self.control()
+            self._check_control()
             try:
                 response = self.client.post(
                     config.endpoint,
@@ -125,7 +150,7 @@ class OnlineProvider:
                     raise TranslationError(
                         "Không kết nối được dịch vụ dịch. Tiến độ đã được lưu."
                     ) from None
-                self.sleep(min(2**attempt, 10))
+                self._retry_wait(min(2**attempt, 10))
                 continue
             if response.status_code in {401, 403}:
                 raise TranslationError("API key không hợp lệ hoặc chưa có quyền dùng model.")
@@ -154,7 +179,7 @@ class OnlineProvider:
                     delay = float(response.headers.get("Retry-After", 2**attempt))
                 except ValueError:
                     delay = 2**attempt
-                self.sleep(max(0, min(delay, 30)))
+                self._retry_wait(max(0, min(delay, 30)))
                 continue
             if not response.is_success:
                 # Never echo an endpoint's raw error: it can contain the key or document text.
@@ -181,29 +206,93 @@ class OnlineProvider:
             result.update(part)
         return result
 
-    def translate_batches(self, segments: list[Segment], glossary: dict):
-        """Yield completed requests so callers can checkpoint and show progress."""
-        budget = (
-            self.config.context_window_tokens - self.config.max_output_tokens
-            - self.config.token_safety_margin
-        )
+    def _pack_batches(self, segments, glossary):
+        budget = (self.config.context_window_tokens - self.config.max_output_tokens
+                  - self.config.token_safety_margin)
         empty_messages, _ = self._messages([], glossary)
         overhead = estimate_input_tokens(empty_messages)
-        current, size = [], overhead
+        current, size, chars, output = [], overhead, 0, 64
         for segment in segments:
-            self.control()
+            self._check_control()
             messages, _ = self._messages([segment], glossary)
-            # Serialized items are additive, with a two-byte ", " separator.
-            # Measure each item once instead of rebuilding every candidate batch.
             item_size = estimate_input_tokens(messages) - overhead
-            separator = 2 if current else 0
-            if current and size + item_size + separator > budget:
-                yield from self._translate_parts(current, glossary)
-                current, size, separator = [], overhead, 0
+            char_size = len(segment.source) + min(len(segment.context), 2000)
+            # Chinese-to-English JSON output needs space too, even with a large
+            # input context. Recursive splitting remains the truncation fallback.
+            output_size = estimate_input_tokens([{"role": "user", "content": segment.source}])
+            if current and (size + item_size + 2 > budget
+                            or chars + char_size > self.batch_chars
+                            or output + output_size > self.config.max_output_tokens):
+                yield current
+                current, size, chars, output = [], overhead, 0, 64
             current.append(segment)
-            size += item_size + separator
+            size += item_size + 2
+            chars += char_size
+            output += output_size
         if current:
-            yield from self._translate_parts(current, glossary)
+            yield current
+
+    def translate_batches(self, segments: list[Segment], glossary: dict):
+        """Bounded HTTP concurrency; yield parts on the caller for checkpointing."""
+        batches = iter(self._pack_batches(segments, glossary))
+        workers = self.config.max_concurrent_requests
+        if workers == 1:
+            for batch in batches:
+                yield from self._translate_parts(batch, glossary)
+            return
+        messages = Queue(maxsize=workers * 2)
+        stop = threading.Event()
+        pool = ThreadPoolExecutor(max_workers=workers)
+        futures = []
+
+        def send(message):
+            from queue import Full
+            while not stop.is_set():
+                try:
+                    messages.put(message, timeout=.05)
+                    return
+                except Full:
+                    continue
+
+        def work(batch):
+            self._workers.stop = stop
+            try:
+                for part in self._translate_parts(batch, glossary):
+                    send(("part", part))
+            except Exception as exc:
+                send(("error", exc))
+            finally:
+                send(("done", None))
+                del self._workers.stop
+
+        def submit():
+            batch = next(batches, None)
+            if batch is None:
+                return False
+            futures.append(pool.submit(work, batch))
+            return True
+
+        try:
+            active = sum(submit() for _ in range(workers))
+            while active:
+                self._check_control()
+                try:
+                    kind, value = messages.get(timeout=.05)
+                except Empty:
+                    continue
+                if kind == "part":
+                    yield value
+                elif kind == "error":
+                    raise value
+                else:
+                    active -= 1
+                    if submit():
+                        active += 1
+        finally:
+            stop.set()
+            for future in futures:
+                future.cancel()
+            pool.shutdown(wait=True, cancel_futures=True)
 
     def _translate_safe(self, segments: list[Segment], glossary: dict) -> dict[str, str]:
         result = {}
@@ -212,7 +301,7 @@ class OnlineProvider:
         return result
 
     def _translate_parts(self, segments: list[Segment], glossary: dict):
-        self.control()
+        self._check_control()
         blanks = {segment.id: segment.source for segment in segments if not segment.source.strip()}
         if blanks:
             nonblank = [segment for segment in segments if segment.id not in blanks]

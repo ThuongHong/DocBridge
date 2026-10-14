@@ -103,12 +103,20 @@ def file_hash(path: Path) -> str:
 def atomic_text(path: Path, content: str) -> None:
     import os
     import tempfile
+    import time
 
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=".converter-")
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             stream.write(content)
-        os.replace(temporary, path)
+        for attempt in range(5):
+            try:
+                os.replace(temporary, path)
+                break
+            except PermissionError:
+                if attempt == 4:
+                    raise
+                time.sleep(.02 * (attempt + 1))
     finally:
         Path(temporary).unlink(missing_ok=True)

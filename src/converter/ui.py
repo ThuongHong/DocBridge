@@ -575,6 +575,9 @@ class MainWindow(QMainWindow):
         self.token_margin_spin = QSpinBox()
         self.token_margin_spin.setRange(0, 1_000_000)
         self.token_margin_spin.setValue(self.profile.token_safety_margin)
+        self.concurrent_spin = QSpinBox()
+        self.concurrent_spin.setRange(1, 8)
+        self.concurrent_spin.setValue(self.profile.max_concurrent_requests)
         self.timeout_spin = QSpinBox()
         self.timeout_spin.setRange(1, 3600)
         self.timeout_spin.setValue(self.profile.timeout_seconds)
@@ -585,9 +588,10 @@ class MainWindow(QMainWindow):
         advanced_form.addRow("Token đầu ra tối đa:", self.max_tokens_spin)
         advanced_form.addRow("Context window (token):", self.context_window_spin)
         advanced_form.addRow("Token dự phòng:", self.token_margin_spin)
-        budget_hint = QLabel("Nhập context window thật của model. App ước lượng đầu vào theo byte UTF-8, chừa token đầu ra và tự chia nhỏ khi vượt giới hạn.")
+        budget_hint = QLabel("Nhập context window thật của model. App ước lượng token theo loại ký tự, chừa token đầu ra và tự chia nhỏ khi dịch vụ báo vượt giới hạn. Giảm request đồng thời nếu gặp giới hạn tốc độ.")
         budget_hint.setWordWrap(True)
         advanced_form.addRow("", budget_hint)
+        advanced_form.addRow("Request đồng thời:", self.concurrent_spin)
         advanced_form.addRow("Timeout (giây):", self.timeout_spin)
         advanced_form.addRow("Số lần thử lại:", self.retries_spin)
         online_layout.addWidget(self.advanced_panel)
@@ -654,6 +658,7 @@ class MainWindow(QMainWindow):
             retries=self.retries_spin.value(),
             context_window_tokens=self.context_window_spin.value(),
             token_safety_margin=self.token_margin_spin.value(),
+            max_concurrent_requests=self.concurrent_spin.value(),
         )
 
     def save_settings_only(self):

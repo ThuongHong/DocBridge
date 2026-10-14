@@ -9,10 +9,16 @@ from statistics import median
 
 from .config import environment, resource_root
 from .models import Block, Document, file_hash
-from .pdf_layout import add_page_context, column_bands, merge_paragraph_lines, word_style
+from .pdf_layout import (
+    column_bands,
+    column_divider,
+    mark_page_furniture,
+    merge_paragraph_lines,
+    word_style,
+)
 from .scan_layout import remaining_figures, ruled_tables
 
-PDF_ADAPTER_VERSION = 4
+PDF_ADAPTER_VERSION = 5
 
 
 def configure_tesseract():
@@ -145,6 +151,65 @@ def refine_ocr_lines(image, lines: list[dict], language: str, config: str, *, fr
     return result
 
 
+def native_table_rows(page, table):
+    """Recover specification columns whose rules stop after the header row."""
+    from pdfplumber.utils import extract_text
+
+    extracted = table.extract()
+    numeric_columns = set()
+    labels = {"MIN", "MINIMUM", "最小值", "TYP", "TYPICAL", "典型值",
+              "NOM", "NOMINAL", "标称值", "MAX", "MAXIMUM", "最大值"}
+    for values in extracted[:3]:
+        numeric_columns.update(
+            index for index, value in enumerate(values)
+            if re.sub(r"\s+", "", value or "").upper() in labels
+        )
+    edges = sorted({cell[0] for cell in table.cells} | {table.bbox[2]})
+    unclaimed = []
+    for char in page.chars:
+        x, y = (char["x0"] + char["x1"]) / 2, (char["top"] + char["bottom"]) / 2
+        if (table.bbox[0] <= x < table.bbox[2] and table.bbox[1] <= y < table.bbox[3]
+                and not any(b[0] <= x < b[2] and b[1] <= y < b[3] for b in table.cells)):
+            unclaimed.append(char)
+    for row, values in zip(table.rows, extracted, strict=True):
+        cells = [(text, bounds or table.bbox)
+                 for text, bounds in zip(values, row.cells, strict=True)]
+        if len(edges) == len(cells) + 1:
+            top = min(b[1] for b in row.cells if b is not None)
+            bottom = min(b[3] for b in row.cells if b is not None)
+            for column, original in enumerate(row.cells):
+                if original is not None:
+                    continue
+                bounds = (edges[column], top, edges[column + 1], bottom)
+                chars = [char for char in unclaimed
+                         if bounds[0] <= (char["x0"] + char["x1"]) / 2 < bounds[2]
+                         and top <= (char["top"] + char["bottom"]) / 2 < bottom]
+                cells[column] = (extract_text(chars) if chars else "", bounds)
+        if len(numeric_columns) >= 2 and len(edges) == len(cells) + 1:
+            for column, original in enumerate(row.cells):
+                if original is None or column not in numeric_columns:
+                    continue
+                x0, top, x1, bottom = original
+                spanned = [index for index in range(len(cells))
+                           if edges[index] >= x0 - 1 and edges[index + 1] <= x1 + 1]
+                if len(set(spanned) & numeric_columns) < 2:
+                    continue
+                refined = []
+                for index in spanned:
+                    bounds = (edges[index], top, edges[index + 1], bottom)
+                    chars = [char for char in page.chars
+                             if bounds[0] <= (char["x0"] + char["x1"]) / 2 < bounds[2]
+                             and top <= (char["top"] + char["bottom"]) / 2 < bottom]
+                    refined.append((index, extract_text(chars) if chars else "", bounds))
+                # Splitting cells must not drop native glyphs or invent values.
+                before = Counter(c for c in (values[column] or "") if not c.isspace())
+                after = Counter(c for _, text, _ in refined for c in text if not c.isspace())
+                if before == after:
+                    for index, text, bounds in refined:
+                        cells[index] = (text, bounds)
+        yield cells
+
+
 def read_pdf(
     source: Path, assets_dir: Path, language="chi_sim+chi_tra+eng", progress=None, control=None
 ) -> Document:
@@ -157,7 +222,10 @@ def read_pdf(
     with pdfplumber.open(source) as pdf:
         if getattr(pdf.doc, "encryption", None):
             raise ValueError("Chưa hỗ trợ PDF được mã hóa.")
-        for number, page in enumerate(pdf.pages):
+        for number, original_page in enumerate(pdf.pages):
+            # Faux-bold/overprinted glyphs are separate PDF drawing operations,
+            # not repeated source text. Keep genuinely different glyphs/styles.
+            page = original_page.dedupe_chars(tolerance=.5)
             if control:
                 control()
             if progress:
@@ -174,10 +242,9 @@ def read_pdf(
             tables = page.find_tables() if words else []
             for table in tables:
                 block = Block("table", meta={"bbox": list(table.bbox)})
-                for row_index, row in enumerate(table.extract()):
+                for row_index, row in enumerate(native_table_rows(page, table)):
                     rb = Block("row")
-                    for column, text in enumerate(row):
-                        bounds = table.rows[row_index].cells[column] or table.bbox
+                    for column, (text, bounds) in enumerate(row):
                         cell = Block("cell", meta={"bbox": list(bounds)})
                         if text:
                             segment = doc.add_segment(
@@ -216,11 +283,34 @@ def read_pdf(
                     if (
                         lines
                         and abs(lines[-1][0]["top"] - word["top"]) < 3
-                        and word["x0"] - lines[-1][-1]["x1"] < 30
+                        and -1 <= word["x0"] - lines[-1][-1]["x1"] < max(
+                            8, min(30, 1.5 * min(
+                                float(word.get("size", baseline)),
+                                float(lines[-1][-1].get("size", baseline)),
+                            ))
+                        )
                     ):
                         lines[-1].append(word)
                     else:
                         lines.append([word])
+                # Infer a gutter from conservative line fragments, then join
+                # wider spaces within a column (e.g. "2.1" + heading text).
+                divider = column_divider([
+                    Block("paragraph", meta={"bbox": [
+                        min(w["x0"] for w in line), min(w["top"] for w in line),
+                        max(w["x1"] for w in line), max(w["bottom"] for w in line),
+                    ]}) for line in lines
+                ], page.width)
+                joined = []
+                for line in lines:
+                    if (joined and abs(joined[-1][0]["top"] - line[0]["top"]) < 3
+                            and -1 <= line[0]["x0"] - joined[-1][-1]["x1"] < 30
+                            and not (divider is not None
+                                     and joined[-1][-1]["x1"] <= divider <= line[0]["x0"])):
+                        joined[-1].extend(line)
+                    else:
+                        joined.append(line)
+                lines = joined
                 for line in lines:
                     text = join_words([word["text"] for word in line])
                     bbox = [
@@ -427,14 +517,15 @@ def read_pdf(
                         )
                         segment.warning = "Text từ ảnh: kiểm tra OCR; ảnh gốc vẫn giữ nguyên."
                         ordered.append((bbox[1], bbox[0], Block(
-                            "paragraph", [segment.id], meta={"bbox": bbox}
+                            "paragraph", [segment.id], meta={
+                                "bbox": bbox, "role": "image_text", "image_asset": asset,
+                            }
                         )))
             if bitmap:
                 bitmap.close()
             ordered = reading_order(ordered, doc, page.width)
             ordered = merge_paragraph_lines(ordered, doc, page.width)
             section.children = [item[2] for item in ordered]
-            add_page_context(section.children, doc)
             if len(lines if words else []) > 3 and any(
                 abs(a[0]["top"] - b[0]["top"]) < 3 and b[0]["x0"] - a[-1]["x1"] >= 30
                 for a, b in pairwise(lines)
@@ -444,15 +535,37 @@ def read_pdf(
                 )
             doc.blocks.append(section)
             page.close()
+            original_page.close()
+    mark_page_furniture(doc)
     doc.warnings = list(dict.fromkeys(doc.warnings))
     return doc
 
 
 def reading_order(items: list, doc: Document, page_width: float) -> list:
     """Read ordinary two-column bands left-to-right, bounded by full-width blocks."""
+    image_text = {}
+    native = []
+    for item in items:
+        asset = item[2].meta.get("image_asset")
+        if item[2].meta.get("role") == "image_text" and asset:
+            image_text.setdefault(asset, []).append(item)
+        else:
+            native.append(item)
+    items = native
+
+    def attach_images(ordered):
+        result = []
+        for item in ordered:
+            result.append(item)
+            result.extend(image_text.pop(item[2].meta.get("asset"), []))
+        result.extend(item for values in image_text.values() for item in values)
+        return result
+
     items = sorted(items, key=lambda item: (item[0], item[1]))
     lookup = doc.by_id()
-    midpoint = page_width / 2
+    midpoint = column_divider([item[2] for item in items], page_width)
+    if midpoint is None:
+        return attach_images(items)
 
     def bounds(item):
         block = item[2]
@@ -462,10 +575,10 @@ def reading_order(items: list, doc: Document, page_width: float) -> list:
             return lookup[block.segments[0]].anchor.get("bbox", [0, item[0], page_width, item[0]])
         return [0, item[0], page_width, item[0]]
 
-    left = [item for item in items if bounds(item)[2] < midpoint - 10]
-    right = [item for item in items if bounds(item)[0] > midpoint + 10]
+    left = [item for item in items if bounds(item)[2] < midpoint]
+    right = [item for item in items if bounds(item)[0] > midpoint]
     if len(left) < 2 or len(right) < 2:
-        return items
+        return attach_images(items)
     result, band = [], []
 
     def flush():
@@ -480,7 +593,7 @@ def reading_order(items: list, doc: Document, page_width: float) -> list:
         else:
             band.append(item)
     flush()
-    return result
+    return attach_images(result)
 
 
 def write_pdf_docx(doc: Document, target: Path):

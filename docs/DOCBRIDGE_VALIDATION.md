@@ -1,5 +1,23 @@
 # DocBridge validation
 
+The 2026-10-14 online update adds bounded request concurrency, character-aware
+token estimation and output-budget packing with main-thread checkpoints. The
+local HTTP fixture fell from 100 requests to 10; the new frozen app completed
+all 300 segments with three concurrent requests and matching source IDs.
+The current suite has 154 passing tests and one skip. This fixture measures
+scheduling rather than actual model inference; see
+[performance evidence](PERFORMANCE_DIAGNOSIS.md#2026-10-14-online-scheduling-update).
+
+The 2026-10-14 PDF parser update improves column order, incomplete table-cell
+geometry, overprinted glyphs, image-text placement and wrapped instructions.
+All 38 selected automotive source assertions now pass (previously 25), against
+36 for Docling Standard CPU and 31 for MinerU Basic CPU. This is a curated
+11-page comparison, not a claim about all PDFs. PDF adapter 5 requires fresh
+PDF parsing jobs; historical export-only access remains available. The final
+suite has 148 passing tests and one skip. See
+[PDF parser validation](PDF_PARSER_VALIDATION.md) for source hashes, reference
+settings, full-document runtime and actual bundle checks.
+
 The large-XLSX follow-up reproduced 399 ordinary Chinese cells left untranslated
 in a 39.21 MiB, three-sheet workbook. Direct non-formula `t="str"` values are now
 extracted and patched; the same file has zero remaining ordinary Chinese cells
@@ -29,7 +47,7 @@ confirmed that the priority is extracting source text for a later online LLM.
 The acceptance criteria are now the local parser, source-language Markdown,
 format preservation/reconstruction, selected UI and naming/build behavior.
 Argos is an offline smoke/format test engine, not a semantic quality gate.
-No Qwen inference or external translation API was called.
+No external LLM inference or external translation API was called.
 
 ## Original-language Markdown conversion
 
@@ -127,7 +145,7 @@ page text followed by a different second page, preventing silent text swaps.
 ## Scope of translation tests
 
 Per the user's instruction, model tests use only the current Argos Chinese–English
-model 1.9 on CPU. Qwen3.8-27B is not tested or called. Formatting checks and reference
+model 1.9 on CPU. external LLM is not tested or called. Formatting checks and reference
 translations are not presented as proof of model translation accuracy.
 Terminology replacement does not guarantee fluent or accurate prose. The latest
 provider translates complete sentences after substituting glossary terms with
@@ -315,7 +333,7 @@ four Settings sections and 97 glossary entries.
 | Original-language Markdown task | Real UI/worker conversion and source-content assertions; no provider/key required, targets unchanged, image assets copied, inline controls retained. |
 | Selected compact UI | Real Qt checks/screenshots and frozen smoke: no main tabs, icon Settings, Review from entry menu, Glossary in Settings; light/English defaults. |
 | DocBridge naming | Project metadata, primary CLI, application/bundle/installer names and built Linux artifacts; legacy commands/data remain compatible. |
-| Bounded local model testing | Current Argos 1.9.6/model 1.9 only, network-blocked workers; no Qwen inference or online translation calls. |
+| Bounded local model testing | Current Argos 1.9.6/model 1.9 only, network-blocked workers; no external LLM inference or online translation calls. |
 | Architecture in README | Mermaid diagram matches worker, parser/model/translation/export boundaries, OPC bindings and OCR line recovery. |
 
 This audit closes the local deliverable under the user's updated acceptance of

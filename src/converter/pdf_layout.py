@@ -7,17 +7,58 @@ from collections import Counter
 from .models import Block, Document
 
 
+def column_divider(blocks: list[Block], page_width: float) -> float | None:
+    """Find a gutter supported by overlapping text on multiple physical rows."""
+    boxes = sorted(
+        (b.meta["bbox"] for b in blocks
+         if b.kind in {"paragraph", "heading", "table"} and b.meta.get("bbox")
+         and b.meta["bbox"][2] - b.meta["bbox"][0] >= page_width * .1),
+        key=lambda box: box[1],
+    )
+    candidates = []
+    for index, first in enumerate(boxes):
+        for second in boxes[index + 1:]:
+            if second[1] >= first[3]:
+                break
+            left, right = sorted((first, second), key=lambda box: box[0])
+            gap = right[0] - left[2]
+            center = (right[0] + left[2]) / 2
+            overlap = min(left[3], right[3]) - max(left[1], right[1])
+            if (8 <= gap <= page_width * .4
+                    and page_width * .35 <= center <= page_width * .65
+                    and overlap >= 3):
+                candidates.append((left[2], right[0], max(left[1], right[1])))
+                # Merged paragraphs can represent several physical rows.
+                if overlap >= 24:
+                    candidates.append((left[2], right[0], max(left[1], right[1]) + 12))
+    if len({round(top / 3) for _, _, top in candidates}) < 2:
+        return None
+    # Indented text makes gap midpoints drift. Choose whitespace supported by
+    # the most rows, rather than averaging into an actual text column.
+    edges = sorted({edge for left, right, _ in candidates for edge in (left, right)})
+    points = [(left + right) / 2 for left, right in zip(edges[:-1], edges[1:], strict=True)]
+    points.append(page_width / 2)
+
+    def support(point):
+        return len({round(top / 3) for left, right, top in candidates if left < point < right})
+
+    divider = max(points, key=lambda point: (support(point), -abs(point - page_width / 2)))
+    return divider if support(divider) >= 2 else None
+
+
 def column_bands(blocks: list[Block], doc: Document, page_width: float) -> list[Block]:
     """Represent unambiguous two-column bands without changing stored reading order."""
-    midpoint = page_width / 2
+    midpoint = column_divider(blocks, page_width)
+    if midpoint is None:
+        return blocks
     lookup = doc.by_id()
     result, band = [], []
 
     def flush():
         if not band:
             return
-        left = [b for b in band if b.meta["bbox"][2] < midpoint - 10]
-        right = [b for b in band if b.meta["bbox"][0] > midpoint + 10]
+        left = [b for b in band if b.meta["bbox"][2] < midpoint]
+        right = [b for b in band if b.meta["bbox"][0] > midpoint]
 
         def bounds(items):
             boxes = [b.meta["bbox"] for b in items]
@@ -30,7 +71,7 @@ def column_bands(blocks: list[Block], doc: Document, page_width: float) -> list[
 
         if left and right and len(left) + len(right) == len(band):
             a, b = bounds(left), bounds(right)
-            if (lines(left) >= 2 and lines(right) >= 2 and b[0] - a[2] >= 18
+            if (lines(left) >= 2 and lines(right) >= 2 and b[0] - a[2] >= 8
                     and min(a[3], b[3]) > max(a[1], b[1])):
                 result.append(Block("columns", children=[
                     Block("column", children=left, meta={"bbox": a}),
@@ -90,18 +131,13 @@ def join_wrapped_lines(left: str, right: str) -> str:
 def merge_paragraph_lines(items: list, doc: Document, page_width: float) -> list:
     """Merge only aligned, tightly spaced wraps within the same reading-order band."""
     lookup = doc.by_id()
-    midpoint = page_width / 2
-    paragraphs = [block.meta["bbox"] for _, _, block in items
-                  if block.kind == "paragraph" and block.meta.get("bbox")]
-    two_columns = (
-        sum(bbox[2] < midpoint - 10 for bbox in paragraphs) >= 2
-        and sum(bbox[0] > midpoint + 10 for bbox in paragraphs) >= 2
-    )
+    midpoint = column_divider([block for _, _, block in items], page_width)
+    two_columns = midpoint is not None
 
     def column(bbox):
         if not two_columns:
             return "wide"
-        return "right" if bbox[0] > midpoint + 10 else "left" if bbox[2] < midpoint - 10 else "wide"
+        return "right" if bbox[0] > midpoint else "left" if bbox[2] < midpoint else "wide"
 
     right_edges = {}
     for _, _, block in items:
@@ -125,6 +161,7 @@ def merge_paragraph_lines(items: list, doc: Document, page_width: float) -> list
         last_bbox = first.anchor.get("line_bboxes", [prev_bbox])[-1]
         size = float(first.style.get("font_size", 12))
         gap = bbox[1] - last_bbox[3]
+        hanging_list = bool(re.match(r"^(?:\d+[.)]\s|[（(]\d+[)）])", first.source))
         same_ocr_paragraph = (
             first.anchor.get("ocr_paragraph") == second.anchor.get("ocr_paragraph")
             if "ocr_paragraph" in first.anchor or "ocr_paragraph" in second.anchor else True
@@ -133,7 +170,7 @@ def merge_paragraph_lines(items: list, doc: Document, page_width: float) -> list
             not same_ocr_paragraph or column(last_bbox) != column(bbox)
             or first.style != second.style
             or not (-1 <= gap <= size * 0.7)
-            or not (-size * 2.2 <= bbox[0] - prev_bbox[0] <= size * 0.8)
+            or not (-size * 2.2 <= bbox[0] - prev_bbox[0] <= size * (2.2 if hanging_list else .8))
             or last_bbox[2] < right_edges[column(last_bbox)] - size * 2
             or re.match(r"^(?:[•●◦▪]|\d+[.)]\s|[（(]\d+[)）])", second.source)
         ):
@@ -157,13 +194,16 @@ def add_page_context(blocks: list, doc: Document):
     lookup = doc.by_id()
 
     def texts(block):
+        if block.meta.get("role") in {"page_header", "page_footer"}:
+            return []
         return [lookup[sid].source for sid in block.segments] + [
             text for child in block.children for text in texts(child)
         ]
 
     for index, block in enumerate(blocks):
         own = texts(block)
-        nearby = [text for neighbor in blocks[max(0, index - 1):index + 2] for text in texts(neighbor)]
+        nearby = [text for neighbor in blocks[max(0, index - 1):index + 2]
+                  if neighbor.meta.get("role") != "image_text" for text in texts(neighbor)]
         context = "\n".join(dict.fromkeys(own + nearby))[:2000]
 
         def assign(item, context=context):
@@ -173,3 +213,40 @@ def add_page_context(blocks: list, doc: Document):
                 assign(child)
 
         assign(block)
+
+
+def mark_page_furniture(doc: Document):
+    """Label repeated margin text, retaining its segments and source anchors."""
+    lookup = doc.by_id()
+    repeated = {}
+    for page_index, page in enumerate(doc.blocks):
+        height = page.meta.get("height", 0)
+        if not height:
+            continue
+        for block in page.children:
+            bbox = block.meta.get("bbox")
+            if not bbox or block.kind not in {"paragraph", "heading"}:
+                continue
+            role = ("page_header" if bbox[3] <= height * .05 else
+                    "page_footer" if bbox[1] >= height * .91 else None)
+            if role is None:
+                continue
+            text = "".join(lookup[sid].source for sid in block.segments)
+            counter = re.compile(r"\bpage\s+\d+(?:\s*(?:of|/)\s*\d+)?|第\s*\d+\s*页", re.I)
+            bare_number = bool(re.fullmatch(r"\s*\d{1,4}\s*", text))
+            publisher = bool(re.search(r"copyright|©|版权所有|有限公司|\d{4}-\d{2}-\d{2}", text, re.I))
+            if role == "page_footer" and not (counter.search(text) or bare_number or publisher):
+                continue
+            # Never collapse changing electrical ratings, IDs or dates into
+            # one key. Only explicit pagination is allowed to vary.
+            normalized = re.sub(r"\s+", "", counter.sub("Page#", text))
+            if bare_number:
+                normalized = "Page#"
+            if normalized:
+                repeated.setdefault((role, normalized), []).append((page_index, block))
+    for (role, _), entries in repeated.items():
+        if len({index for index, _ in entries}) >= 2:
+            for _, block in entries:
+                block.meta["role"] = role
+    for page in doc.blocks:
+        add_page_context(page.children, doc)

@@ -1,0 +1,56 @@
+{
+  "purpose": "Local HTTP scheduling benchmark; synthetic echo response, not LLM inference",
+  "measurements": {
+    "baseline": {
+      "variant": "baseline",
+      "segments": 300,
+      "source_characters": 72000,
+      "seconds": 11.916512928000884,
+      "requests": 100,
+      "active": 0,
+      "peak_active": 1,
+      "targets_match": true,
+      "mock_latency_seconds": 0.1,
+      "cloud_inference_invoked": false
+    },
+    "sequential-new": {
+      "variant": "sequential-new",
+      "segments": 300,
+      "source_characters": 72000,
+      "seconds": 1.3174847079935716,
+      "requests": 10,
+      "active": 0,
+      "peak_active": 1,
+      "targets_match": true,
+      "mock_latency_seconds": 0.1,
+      "cloud_inference_invoked": false
+    },
+    "optimized": {
+      "variant": "optimized",
+      "segments": 300,
+      "source_characters": 72000,
+      "seconds": 0.6028796619939385,
+      "requests": 10,
+      "active": 0,
+      "peak_active": 3,
+      "targets_match": true,
+      "mock_latency_seconds": 0.1,
+      "cloud_inference_invoked": false
+    },
+    "frozen-report": {
+      "worker_exit": 0,
+      "requests": 10,
+      "active": 0,
+      "peak_active": 3,
+      "segments": 300,
+      "targets_match": true,
+      "markdown_exported": true,
+      "cloud_inference_invoked": false,
+      "seconds": 1.2209575989982113
+    }
+  },
+  "regression_tests": {
+    "passed": 154,
+    "skipped": 1
+  }
+}
