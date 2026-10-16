@@ -58,6 +58,7 @@ def run_jobs(root: str, job_ids: list[str], options: dict, api_key: str, queue, 
                     options["ocr_language"],
                     export_only=options.get("export_only", False),
                     operation=operation,
+                    excel_layout=options.get("excel_layout", "preserve"),
                 )
             except Exception as exc:
                 queue.put({"kind": "error", "id": job_id, "message": str(exc)})

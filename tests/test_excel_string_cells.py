@@ -47,6 +47,7 @@ def test_direct_strings_patch_original_values_and_keep_other_parts(spreadsheet, 
         )
     output = tmp_path / "translated.xlsx"
     write_office(doc, output)
+    assert doc.coverage["han_locations"]["preserved_display_cache"]["count"] == 1
     with zipfile.ZipFile(source) as before, zipfile.ZipFile(output) as after:
         assert set(before.namelist()) == set(after.namelist())
         for name in before.namelist():

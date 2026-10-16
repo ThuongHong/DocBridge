@@ -1,0 +1,1710 @@
+[
+  {
+    "file": "huangshi-tree-transplant.xlsx",
+    "bytes": 41406,
+    "sha256": "9f138982f9982c6e3ad0685ccf74747ef9704123ba239d9713896ee8c2b5a661",
+    "uncompressed_bytes": 184970,
+    "sheets": [
+      {
+        "name": "扉-1 招标工程量清单扉页",
+        "state": "visible",
+        "chinese_cells": 20,
+        "text_cells": 20,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 26,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "B1:F1",
+          "A2:G2",
+          "A3:B3"
+        ]
+      },
+      {
+        "name": "表-01 总说明",
+        "state": "visible",
+        "chinese_cells": 5,
+        "text_cells": 5,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 4,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:C1",
+          "A2:B2",
+          "A3:C3"
+        ]
+      },
+      {
+        "name": "表-08 分部分项工程和单价措施项目清单与计价表",
+        "state": "visible",
+        "chinese_cells": 43,
+        "text_cells": 53,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 57,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:K1",
+          "A2:E2",
+          "F2:H2"
+        ]
+      },
+      {
+        "name": "表-12 其他项目清单与计价汇总表",
+        "state": "visible",
+        "chinese_cells": 25,
+        "text_cells": 40,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 77,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:G1",
+          "A2:C2",
+          "D2:E2"
+        ]
+      },
+      {
+        "name": "表-12-1 暂列金额表",
+        "state": "visible",
+        "chinese_cells": 12,
+        "text_cells": 15,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 76,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:G1",
+          "A2:C2",
+          "D2:E2"
+        ]
+      },
+      {
+        "name": "表-12-2 材料(工程设备)暂估价及调整表",
+        "state": "visible",
+        "chinese_cells": 23,
+        "text_cells": 23,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 80,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:N1",
+          "A2:F2",
+          "G2:J2"
+        ]
+      },
+      {
+        "name": "表-12-3 专业工程暂估价及结算价表",
+        "state": "visible",
+        "chinese_cells": 14,
+        "text_cells": 17,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 9,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:G1",
+          "A2:C2",
+          "D2:E2"
+        ]
+      },
+      {
+        "name": "表-12-4 计日工表",
+        "state": "visible",
+        "chinese_cells": 20,
+        "text_cells": 27,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 72,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:H1",
+          "A2:D2",
+          "E2:F2"
+        ]
+      },
+      {
+        "name": "表-12-5 总承包服务费计价表",
+        "state": "visible",
+        "chinese_cells": 18,
+        "text_cells": 25,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 74,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:I1",
+          "A2:D2",
+          "E2:F2"
+        ]
+      },
+      {
+        "name": "表-20 发包人提供材料和工程设备一览表",
+        "state": "visible",
+        "chinese_cells": 14,
+        "text_cells": 14,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 74,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:J1",
+          "A2:E2",
+          "F2:G2"
+        ]
+      },
+      {
+        "name": "表-21 承包人提供主要材料和工程设备一览表",
+        "state": "visible",
+        "chinese_cells": 16,
+        "text_cells": 16,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 71,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:K1",
+          "A2:K2",
+          "A3:F3"
+        ]
+      },
+      {
+        "name": "表-22 承包人提供材料和工程设备一览表",
+        "state": "visible",
+        "chinese_cells": 15,
+        "text_cells": 19,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 68,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:H1",
+          "A2:H2",
+          "A3:D3"
+        ]
+      }
+    ],
+    "totals": {
+      "chinese_cells": 225,
+      "text_cells": 274,
+      "formula_cells": 0,
+      "cross_sheet_formula_nodes": 0,
+      "chinese_formula_caches": 0,
+      "merged_ranges": 688,
+      "rich_text_cells": 0,
+      "validation_rules": 0,
+      "chinese_header_footer_nodes": 0
+    },
+    "sheet_count": 12,
+    "unique_chinese_strings": 149,
+    "most_repeated_chinese_strings": [
+      {
+        "text": "工程名称：颐阳路改造项目树木移栽",
+        "count": 11
+      },
+      {
+        "text": "标段：",
+        "count": 10
+      },
+      {
+        "text": "第 1 页  共 1 页",
+        "count": 10
+      }
+    ],
+    "meets_core_criteria": false,
+    "parser": {
+      "status": "compared",
+      "segments": 274,
+      "chinese_cells_compared": 225,
+      "missing_or_changed_cells": 0,
+      "missing_examples": [],
+      "chinese_sheet_names_without_segments": [
+        "扉-1 招标工程量清单扉页",
+        "表-01 总说明",
+        "表-08 分部分项工程和单价措施项目清单与计价表",
+        "表-12 其他项目清单与计价汇总表",
+        "表-12-1 暂列金额表",
+        "表-12-2 材料(工程设备)暂估价及调整表",
+        "表-12-3 专业工程暂估价及结算价表",
+        "表-12-4 计日工表",
+        "表-12-5 总承包服务费计价表",
+        "表-20 发包人提供材料和工程设备一览表",
+        "表-21 承包人提供主要材料和工程设备一览表",
+        "表-22 承包人提供材料和工程设备一览表"
+      ]
+    }
+  },
+  {
+    "file": "hunan-construction-costs.xlsx",
+    "bytes": 30908,
+    "sha256": "41857bf62eee214cc2c335f0373a62df4ce0435275806835f3c0e423e428e006",
+    "uncompressed_bytes": 130245,
+    "sheets": [
+      {
+        "name": "之前的表格",
+        "state": "hidden",
+        "chinese_cells": 49,
+        "text_cells": 49,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 47,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:H1",
+          "B2:C2",
+          "F2:H2"
+        ]
+      },
+      {
+        "name": "填写说明",
+        "state": "visible",
+        "chinese_cells": 1,
+        "text_cells": 1,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 0,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": []
+      },
+      {
+        "name": "项目基本情况表",
+        "state": "visible",
+        "chinese_cells": 42,
+        "text_cells": 42,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 32,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 1,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:N1",
+          "A2:B2",
+          "C2:D2"
+        ]
+      },
+      {
+        "name": "费用汇总表",
+        "state": "visible",
+        "chinese_cells": 18,
+        "text_cells": 23,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 8,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:O1",
+          "E2:O2",
+          "E3:O3"
+        ]
+      },
+      {
+        "name": "管理费明细表",
+        "state": "visible",
+        "chinese_cells": 10,
+        "text_cells": 10,
+        "formula_cells": 1,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [
+          {
+            "cell": "C7",
+            "formula": "SUM(C3:C6)"
+          }
+        ],
+        "merge_examples": [
+          "A1:D1"
+        ]
+      },
+      {
+        "name": "安全生产措施费明细表",
+        "state": "visible",
+        "chinese_cells": 18,
+        "text_cells": 18,
+        "formula_cells": 1,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [
+          {
+            "cell": "C15",
+            "formula": "SUM(C3:C13)"
+          }
+        ],
+        "merge_examples": [
+          "A1:D1"
+        ]
+      },
+      {
+        "name": "环境保护费明细表",
+        "state": "visible",
+        "chinese_cells": 15,
+        "text_cells": 15,
+        "formula_cells": 1,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [
+          {
+            "cell": "C12",
+            "formula": "SUM(C3:C10)"
+          }
+        ],
+        "merge_examples": [
+          "A1:D1"
+        ]
+      },
+      {
+        "name": "文明施工费明细表",
+        "state": "visible",
+        "chinese_cells": 15,
+        "text_cells": 15,
+        "formula_cells": 1,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [
+          {
+            "cell": "C12",
+            "formula": "SUM(C3:C10)"
+          }
+        ],
+        "merge_examples": [
+          "A1:D1"
+        ]
+      },
+      {
+        "name": "临时设施费明细表",
+        "state": "visible",
+        "chinese_cells": 12,
+        "text_cells": 12,
+        "formula_cells": 1,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [
+          {
+            "cell": "C9",
+            "formula": "SUM(C3:C7)"
+          }
+        ],
+        "merge_examples": [
+          "A1:D1"
+        ]
+      },
+      {
+        "name": "智慧工地建设明细表",
+        "state": "visible",
+        "chinese_cells": 31,
+        "text_cells": 31,
+        "formula_cells": 1,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 7,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [
+          {
+            "cell": "D23",
+            "formula": "SUM(D3:D22)"
+          }
+        ],
+        "merge_examples": [
+          "A1:E1",
+          "B2:C2",
+          "B3:B5"
+        ]
+      }
+    ],
+    "totals": {
+      "chinese_cells": 211,
+      "text_cells": 216,
+      "formula_cells": 6,
+      "cross_sheet_formula_nodes": 0,
+      "chinese_formula_caches": 0,
+      "merged_ranges": 99,
+      "rich_text_cells": 0,
+      "validation_rules": 0,
+      "chinese_header_footer_nodes": 1
+    },
+    "sheet_count": 10,
+    "unique_chinese_strings": 169,
+    "most_repeated_chinese_strings": [
+      {
+        "text": "备注",
+        "count": 8
+      },
+      {
+        "text": "序号",
+        "count": 7
+      },
+      {
+        "text": "其他",
+        "count": 6
+      }
+    ],
+    "meets_core_criteria": true,
+    "parser": {
+      "status": "compared",
+      "segments": 216,
+      "chinese_cells_compared": 211,
+      "missing_or_changed_cells": 0,
+      "missing_examples": [],
+      "chinese_sheet_names_without_segments": [
+        "之前的表格",
+        "填写说明",
+        "项目基本情况表",
+        "费用汇总表",
+        "管理费明细表",
+        "安全生产措施费明细表",
+        "环境保护费明细表",
+        "文明施工费明细表",
+        "临时设施费明细表",
+        "智慧工地建设明细表"
+      ]
+    }
+  },
+  {
+    "file": "liangzihu-budget.xlsx",
+    "bytes": 36317,
+    "sha256": "d395b965bfc9959c9d7009ddbb18ba97510f14388a567412987d450ac4d1234b",
+    "uncompressed_bytes": 174871,
+    "sheets": [
+      {
+        "name": "目录",
+        "state": "visible",
+        "chinese_cells": 22,
+        "text_cells": 22,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:B2"
+        ]
+      },
+      {
+        "name": "1.收支总表",
+        "state": "visible",
+        "chinese_cells": 50,
+        "text_cells": 50,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 3,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:D2",
+          "A4:B4",
+          "C4:D4"
+        ]
+      },
+      {
+        "name": "2.收入总表",
+        "state": "visible",
+        "chinese_cells": 28,
+        "text_cells": 30,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 6,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:S2",
+          "D4:M4",
+          "N4:S4"
+        ]
+      },
+      {
+        "name": "3.支出总表",
+        "state": "visible",
+        "chinese_cells": 30,
+        "text_cells": 47,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:H2"
+        ]
+      },
+      {
+        "name": "4.财政拨款收支总表",
+        "state": "visible",
+        "chinese_cells": 46,
+        "text_cells": 46,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 3,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:D2",
+          "A4:B4",
+          "C4:D4"
+        ]
+      },
+      {
+        "name": "5.一般公共预算支出表",
+        "state": "visible",
+        "chinese_cells": 30,
+        "text_cells": 47,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 6,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:G2",
+          "D4:F4",
+          "A4:A5"
+        ]
+      },
+      {
+        "name": "6.基本支出",
+        "state": "visible",
+        "chinese_cells": 39,
+        "text_cells": 66,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 3,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:E2",
+          "A4:B4",
+          "C4:E4"
+        ]
+      },
+      {
+        "name": "7.三公",
+        "state": "visible",
+        "chinese_cells": 14,
+        "text_cells": 15,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 9,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:C1",
+          "A2:H2",
+          "A3:B3"
+        ]
+      },
+      {
+        "name": "8.政府性基金",
+        "state": "visible",
+        "chinese_cells": 11,
+        "text_cells": 11,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 5,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:E2",
+          "C4:E4",
+          "A6:B6"
+        ]
+      },
+      {
+        "name": "9.项目支出",
+        "state": "visible",
+        "chinese_cells": 110,
+        "text_cells": 169,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 9,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:L2",
+          "E4:G4",
+          "H4:J4"
+        ]
+      }
+    ],
+    "totals": {
+      "chinese_cells": 380,
+      "text_cells": 503,
+      "formula_cells": 0,
+      "cross_sheet_formula_nodes": 0,
+      "chinese_formula_caches": 0,
+      "merged_ranges": 46,
+      "rich_text_cells": 0,
+      "validation_rules": 0,
+      "chinese_header_footer_nodes": 0
+    },
+    "sheet_count": 10,
+    "unique_chinese_strings": 247,
+    "most_repeated_chinese_strings": [
+      {
+        "text": "鄂州市梁子湖区发展改革和经济信息化局本级",
+        "count": 34
+      },
+      {
+        "text": "合计",
+        "count": 10
+      },
+      {
+        "text": "部门/单位：",
+        "count": 9
+      }
+    ],
+    "meets_core_criteria": false,
+    "parser": {
+      "status": "compared",
+      "segments": 513,
+      "chinese_cells_compared": 380,
+      "missing_or_changed_cells": 0,
+      "missing_examples": [],
+      "chinese_sheet_names_without_segments": [
+        "目录",
+        "1.收支总表",
+        "2.收入总表",
+        "3.支出总表",
+        "4.财政拨款收支总表",
+        "5.一般公共预算支出表",
+        "6.基本支出",
+        "7.三公",
+        "8.政府性基金",
+        "9.项目支出"
+      ]
+    }
+  },
+  {
+    "file": "liangzihu-expenses.xlsx",
+    "bytes": 11787,
+    "sha256": "4a88cc419596d11f7189fed839054a21015d580b4497363603cf83500c71d642",
+    "uncompressed_bytes": 24244,
+    "sheets": [
+      {
+        "name": "【15】三公支出预算表",
+        "state": "visible",
+        "chinese_cells": 11,
+        "text_cells": 11,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 1,
+        "formula_examples": [],
+        "merge_examples": [
+          "A11:B12"
+        ]
+      }
+    ],
+    "totals": {
+      "chinese_cells": 11,
+      "text_cells": 11,
+      "formula_cells": 0,
+      "cross_sheet_formula_nodes": 0,
+      "chinese_formula_caches": 0,
+      "merged_ranges": 1,
+      "rich_text_cells": 0,
+      "validation_rules": 0,
+      "chinese_header_footer_nodes": 1
+    },
+    "sheet_count": 1,
+    "unique_chinese_strings": 11,
+    "most_repeated_chinese_strings": [
+      {
+        "text": "三公支出预算表",
+        "count": 1
+      },
+      {
+        "text": "单位：万元/年",
+        "count": 1
+      },
+      {
+        "text": "项目",
+        "count": 1
+      }
+    ],
+    "meets_core_criteria": false,
+    "parser": {
+      "status": "compared",
+      "segments": 11,
+      "chinese_cells_compared": 11,
+      "missing_or_changed_cells": 0,
+      "missing_examples": [],
+      "chinese_sheet_names_without_segments": [
+        "【15】三公支出预算表"
+      ]
+    }
+  },
+  {
+    "file": "mof-financial-reports.xlsx",
+    "bytes": 85907,
+    "sha256": "36442fae34ca161cabea0d2fa98ce43635d930ea27edd3a115d947dbcf52f3a4",
+    "uncompressed_bytes": 473757,
+    "sheets": [
+      {
+        "name": "汇总封面",
+        "state": "visible",
+        "chinese_cells": 14,
+        "text_cells": 14,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 3,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:J2",
+          "A12:J12",
+          "A3:J11"
+        ]
+      },
+      {
+        "name": "分户封面",
+        "state": "visible",
+        "chinese_cells": 55,
+        "text_cells": 67,
+        "formula_cells": 2,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 4,
+        "rich_text_cells": 1,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [
+          {
+            "cell": "B51",
+            "formula": "SUM(B48:B50)"
+          },
+          {
+            "cell": "B52",
+            "formula": "B51/6"
+          }
+        ],
+        "merge_examples": [
+          "A1:I1",
+          "A11:I11",
+          "C29:H29"
+        ]
+      },
+      {
+        "name": "主要指标表",
+        "state": "visible",
+        "chinese_cells": 95,
+        "text_cells": 177,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 1,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:E1"
+        ]
+      },
+      {
+        "name": "主要指标表（新保险准则）",
+        "state": "visible",
+        "chinese_cells": 83,
+        "text_cells": 153,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:E1"
+        ]
+      },
+      {
+        "name": "主要指标表 (2)",
+        "state": "visible",
+        "chinese_cells": 99,
+        "text_cells": 185,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 1,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:E1"
+        ]
+      },
+      {
+        "name": "国有资本保值增值情况表",
+        "state": "visible",
+        "chinese_cells": 46,
+        "text_cells": 118,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 3,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:I1",
+          "C2:E2",
+          "A37:I37"
+        ]
+      },
+      {
+        "name": "商业银行绩效评价基础数据表",
+        "state": "visible",
+        "chinese_cells": 41,
+        "text_cells": 75,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:D1"
+        ]
+      },
+      {
+        "name": "商业银行绩效评价历史对标基础数据表",
+        "state": "visible",
+        "chinese_cells": 41,
+        "text_cells": 62,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:H1"
+        ]
+      },
+      {
+        "name": "证券业绩效评价基础数据表",
+        "state": "visible",
+        "chinese_cells": 23,
+        "text_cells": 43,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 1,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:D1"
+        ]
+      },
+      {
+        "name": "商业保险公司绩效评价基础数据表",
+        "state": "visible",
+        "chinese_cells": 67,
+        "text_cells": 132,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 52,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:E1",
+          "A3:B3",
+          "A4:B4"
+        ]
+      },
+      {
+        "name": "商业保险公司绩效评价历史对标基础数据表",
+        "state": "visible",
+        "chinese_cells": 62,
+        "text_cells": 99,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:L1"
+        ]
+      },
+      {
+        "name": "其他金融企业绩效评价基础数据表",
+        "state": "visible",
+        "chinese_cells": 23,
+        "text_cells": 38,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 2,
+        "rich_text_cells": 2,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:D1",
+          "A19:D19"
+        ]
+      },
+      {
+        "name": "银行业补充表",
+        "state": "visible",
+        "chinese_cells": 77,
+        "text_cells": 147,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 27,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:E1"
+        ]
+      },
+      {
+        "name": "证券业补充表",
+        "state": "visible",
+        "chinese_cells": 55,
+        "text_cells": 101,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 1,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:E1"
+        ]
+      },
+      {
+        "name": "保险业补充表",
+        "state": "visible",
+        "chinese_cells": 71,
+        "text_cells": 134,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:E1"
+        ]
+      },
+      {
+        "name": "保险业补充表 (已执行)",
+        "state": "visible",
+        "chinese_cells": 63,
+        "text_cells": 120,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:E1"
+        ]
+      },
+      {
+        "name": "保险业补充表 (未执行)",
+        "state": "visible",
+        "chinese_cells": 66,
+        "text_cells": 126,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:E1"
+        ]
+      },
+      {
+        "name": "担保业补充表",
+        "state": "visible",
+        "chinese_cells": 49,
+        "text_cells": 89,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 3,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:E1"
+        ]
+      },
+      {
+        "name": "资产管理公司补充表",
+        "state": "visible",
+        "chinese_cells": 69,
+        "text_cells": 130,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A1:E1"
+        ]
+      }
+    ],
+    "totals": {
+      "chinese_cells": 1099,
+      "text_cells": 2010,
+      "formula_cells": 2,
+      "cross_sheet_formula_nodes": 0,
+      "chinese_formula_caches": 0,
+      "merged_ranges": 78,
+      "rich_text_cells": 37,
+      "validation_rules": 0,
+      "chinese_header_footer_nodes": 0
+    },
+    "sheet_count": 19,
+    "unique_chinese_strings": 693,
+    "most_repeated_chinese_strings": [
+      {
+        "text": "行次",
+        "count": 22
+      },
+      {
+        "text": "金额单位：万元",
+        "count": 17
+      },
+      {
+        "text": "增减比例（%）",
+        "count": 13
+      }
+    ],
+    "meets_core_criteria": true,
+    "parser": {
+      "status": "compared",
+      "segments": 2064,
+      "chinese_cells_compared": 1099,
+      "missing_or_changed_cells": 0,
+      "missing_examples": [],
+      "chinese_sheet_names_without_segments": [
+        "汇总封面",
+        "分户封面",
+        "主要指标表",
+        "主要指标表（新保险准则）",
+        "主要指标表 (2)",
+        "国有资本保值增值情况表",
+        "商业银行绩效评价基础数据表",
+        "商业银行绩效评价历史对标基础数据表",
+        "证券业绩效评价基础数据表",
+        "商业保险公司绩效评价基础数据表",
+        "商业保险公司绩效评价历史对标基础数据表",
+        "其他金融企业绩效评价基础数据表",
+        "银行业补充表",
+        "证券业补充表",
+        "保险业补充表",
+        "保险业补充表 (已执行)",
+        "保险业补充表 (未执行)",
+        "担保业补充表",
+        "资产管理公司补充表"
+      ]
+    }
+  },
+  {
+    "file": "ouc-procurement-budget.xlsx",
+    "bytes": 6486342,
+    "sha256": "d4ae9936aa319440103659706ae98096ac64fb248d38409e317df4ed4f7d36ea",
+    "uncompressed_bytes": 91023638,
+    "sheets": [
+      {
+        "name": "新增资产配置",
+        "state": "visible",
+        "chinese_cells": 1049275,
+        "text_cells": 1049275,
+        "formula_cells": 214,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 26,
+        "validation_rules": 2,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [
+          {
+            "cell": "R2",
+            "formula": "Q2*O2/10000"
+          },
+          {
+            "cell": "R3",
+            "formula": "Q3*O3/10000"
+          },
+          {
+            "cell": "R67",
+            "formula": "Q67*O67/10000"
+          }
+        ],
+        "merge_examples": [
+          "A6:B21"
+        ]
+      },
+      {
+        "name": "政府采购",
+        "state": "visible",
+        "chinese_cells": 22,
+        "text_cells": 22,
+        "formula_cells": 65533,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 12,
+        "rich_text_cells": 7,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [
+          {
+            "cell": "K4",
+            "formula": "J4*I4/10000"
+          },
+          {
+            "cell": "K5",
+            "formula": "J5*I5/10000"
+          },
+          {
+            "cell": "K69",
+            "formula": "J69*I69/10000"
+          }
+        ],
+        "merge_examples": [
+          "I1:I3",
+          "J1:J3",
+          "K1:K3"
+        ]
+      },
+      {
+        "name": "政府采购（数据源）",
+        "state": "visible",
+        "chinese_cells": 3948,
+        "text_cells": 3948,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 0,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": []
+      },
+      {
+        "name": "新增资产配置（数据源）",
+        "state": "visible",
+        "chinese_cells": 3436,
+        "text_cells": 3436,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 0,
+        "rich_text_cells": 1,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": []
+      }
+    ],
+    "totals": {
+      "chinese_cells": 1056681,
+      "text_cells": 1056681,
+      "formula_cells": 65747,
+      "cross_sheet_formula_nodes": 0,
+      "chinese_formula_caches": 0,
+      "merged_ranges": 13,
+      "rich_text_cells": 34,
+      "validation_rules": 2,
+      "chinese_header_footer_nodes": 0
+    },
+    "sheet_count": 4,
+    "unique_chinese_strings": 7332,
+    "most_repeated_chinese_strings": [
+      {
+        "text": "0-无",
+        "count": 1048575
+      },
+      {
+        "text": "无需填写",
+        "count": 428
+      },
+      {
+        "text": "否",
+        "count": 217
+      }
+    ],
+    "meets_core_criteria": true,
+    "parser": {
+      "status": "not_run",
+      "reason": "Chinese cell limit exceeded",
+      "max_chinese_cells": 20000
+    }
+  },
+  {
+    "file": "zhangye-budget.xlsx",
+    "bytes": 33737,
+    "sha256": "4ef31a164a3b6cb9f4a1818f3046a273f061186f05d6209a4ee90e28d6cf62d4",
+    "uncompressed_bytes": 131846,
+    "sheets": [
+      {
+        "name": "封面",
+        "state": "visible",
+        "chinese_cells": 7,
+        "text_cells": 7,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 7,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "C3:E3",
+          "B4:E4",
+          "B6:K6"
+        ]
+      },
+      {
+        "name": "目录",
+        "state": "visible",
+        "chinese_cells": 21,
+        "text_cells": 21,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "B2:C2"
+        ]
+      },
+      {
+        "name": "1",
+        "state": "visible",
+        "chinese_cells": 54,
+        "text_cells": 54,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 5,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:D2",
+          "A3:C3",
+          "A4:B4"
+        ]
+      },
+      {
+        "name": "2",
+        "state": "visible",
+        "chinese_cells": 13,
+        "text_cells": 13,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 2,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:B2",
+          "A14:B14"
+        ]
+      },
+      {
+        "name": "3",
+        "state": "visible",
+        "chinese_cells": 25,
+        "text_cells": 25,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 2,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:E2",
+          "A23:E23"
+        ]
+      },
+      {
+        "name": "4",
+        "state": "visible",
+        "chinese_cells": 44,
+        "text_cells": 44,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 5,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:D2",
+          "C3:D3",
+          "A4:B4"
+        ]
+      },
+      {
+        "name": "5",
+        "state": "visible",
+        "chinese_cells": 20,
+        "text_cells": 20,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 8,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:K2",
+          "J3:K3",
+          "C4:E4"
+        ]
+      },
+      {
+        "name": "6",
+        "state": "visible",
+        "chinese_cells": 27,
+        "text_cells": 43,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 5,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:E2",
+          "C3:E3",
+          "A4:B4"
+        ]
+      },
+      {
+        "name": "7",
+        "state": "visible",
+        "chinese_cells": 37,
+        "text_cells": 65,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 5,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:E2",
+          "A3:B3",
+          "A4:B4"
+        ]
+      },
+      {
+        "name": "8",
+        "state": "visible",
+        "chinese_cells": 16,
+        "text_cells": 16,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 10,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:H2",
+          "B4:F4",
+          "E5:F5"
+        ]
+      },
+      {
+        "name": "9",
+        "state": "visible",
+        "chinese_cells": 16,
+        "text_cells": 18,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 2,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:E2",
+          "A15:E15"
+        ]
+      },
+      {
+        "name": "10",
+        "state": "visible",
+        "chinese_cells": 6,
+        "text_cells": 6,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 2,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:B2",
+          "A7:B7"
+        ]
+      },
+      {
+        "name": "11",
+        "state": "visible",
+        "chinese_cells": 9,
+        "text_cells": 10,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 2,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:E2",
+          "A8:D8"
+        ]
+      },
+      {
+        "name": "12",
+        "state": "visible",
+        "chinese_cells": 7,
+        "text_cells": 8,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 2,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": [
+          "A2:B2",
+          "A3:B3"
+        ]
+      },
+      {
+        "name": "Sheet1",
+        "state": "visible",
+        "chinese_cells": 0,
+        "text_cells": 0,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 0,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": []
+      }
+    ],
+    "totals": {
+      "chinese_cells": 302,
+      "text_cells": 350,
+      "formula_cells": 0,
+      "cross_sheet_formula_nodes": 0,
+      "chinese_formula_caches": 0,
+      "merged_ranges": 58,
+      "rich_text_cells": 0,
+      "validation_rules": 0,
+      "chinese_header_footer_nodes": 0
+    },
+    "sheet_count": 15,
+    "unique_chinese_strings": 206,
+    "most_repeated_chinese_strings": [
+      {
+        "text": "合计",
+        "count": 16
+      },
+      {
+        "text": "备注：无内容应公开空表并说明情况。",
+        "count": 12
+      },
+      {
+        "text": "单位：万元",
+        "count": 11
+      }
+    ],
+    "meets_core_criteria": false,
+    "parser": {
+      "status": "compared",
+      "segments": 367,
+      "chinese_cells_compared": 302,
+      "missing_or_changed_cells": 0,
+      "missing_examples": [],
+      "chinese_sheet_names_without_segments": [
+        "封面",
+        "目录"
+      ]
+    }
+  }
+]

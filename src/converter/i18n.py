@@ -3,6 +3,9 @@
 import re
 
 ENGLISH = {
+    "Dễ đọc": "Readable",
+    "Dễ đọc: xuống dòng, tăng chiều cao; có thể giảm font tới 9pt và đổi số trang in. Giữ bố cục: giữ kích thước gốc.": "Readable: wrap text and grow rows; may reduce fonts to 9pt and change printed page counts. Preserve layout: keep original dimensions.",
+    "Giữ bố cục": "Preserve layout",
     "Dịch sang tiếng Anh": "Translate to English",
     "Chuyển sang Markdown": "Convert to Markdown",
     "Dịch bằng:": "Translate with:",

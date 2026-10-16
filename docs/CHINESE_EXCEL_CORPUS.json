@@ -1,0 +1,103 @@
+{
+  "verified_on": "2026-10-16",
+  "files": [
+    {
+      "file": "mof-financial-reports.xlsx",
+      "original_title": "金融企业财务快报",
+      "publisher": "Ministry of Finance, China",
+      "source_page": "https://bgt.mof.gov.cn/zhuantilanmu/rdwyh/czyw/202512/t20251212_3979031.htm",
+      "download_url": "https://bgt.mof.gov.cn/zhuantilanmu/rdwyh/czyw/202512/P020251212568380236738.xlsx",
+      "sha256": "36442fae34ca161cabea0d2fa98ce43635d930ea27edd3a115d947dbcf52f3a4",
+      "role": "core",
+      "sheets": 19,
+      "formulas": 2,
+      "merged_ranges": 78,
+      "chinese_cells": 1099,
+      "unique_chinese_strings": 693
+    },
+    {
+      "file": "hunan-construction-costs.xlsx",
+      "original_title": "建设工程费用测算表",
+      "publisher": "Hunan Department of Housing and Urban-Rural Development",
+      "source_page": "https://zjt.hunan.gov.cn/hnweb/zxfb/202505/t20250508_33665095.html",
+      "download_url": "https://zjt.hunan.gov.cn/hnweb/zxfb/202505/33665095/files/c456c8a3ba0c47e1bc9cbf350370d0ca.xlsx",
+      "sha256": "41857bf62eee214cc2c335f0373a62df4ce0435275806835f3c0e423e428e006",
+      "role": "core",
+      "sheets": 10,
+      "formulas": 6,
+      "merged_ranges": 99,
+      "chinese_cells": 211,
+      "unique_chinese_strings": 169
+    },
+    {
+      "file": "ouc-procurement-budget.xlsx",
+      "original_title": "2027年科研项目新增资产和政府采购预算填报表",
+      "publisher": "Ocean University of China",
+      "source_page": "https://kjc.ouc.edu.cn/2026/0625/c33319a533142/page.htm",
+      "download_url": "https://kjc.ouc.edu.cn/_upload/article/files/5d/65/04ccbbac48e3a1126fee704a0898/abd5218b-a44f-4b5e-ae15-b64df8b99a6f.xlsx",
+      "sha256": "d4ae9936aa319440103659706ae98096ac64fb248d38409e317df4ed4f7d36ea",
+      "role": "core",
+      "sheets": 4,
+      "formulas": 65747,
+      "merged_ranges": 13,
+      "chinese_cells": 1056681,
+      "unique_chinese_strings": 7332
+    },
+    {
+      "file": "huangshi-tree-transplant.xlsx",
+      "original_title": "颐阳路改造项目树木移栽工程量清单",
+      "publisher": "Huangshi Housing and Urban Renewal Bureau",
+      "source_page": "https://zjj.huangshi.gov.cn/xxgk_7967/fdzdgknr/zfcg/cgxx/202503/t20250318_1205460.html",
+      "download_url": "https://zjj.huangshi.gov.cn/xxgk_7967/fdzdgknr/zfcg/cgxx/202503/P020250318516313694336.xlsx",
+      "sha256": "9f138982f9982c6e3ad0685ccf74747ef9704123ba239d9713896ee8c2b5a661",
+      "role": "supplementary",
+      "sheets": 12,
+      "formulas": 0,
+      "merged_ranges": 688,
+      "chinese_cells": 225,
+      "unique_chinese_strings": 149
+    },
+    {
+      "file": "liangzihu-budget.xlsx",
+      "original_title": "区发改部门预算批复",
+      "publisher": "Liangzihu District Government",
+      "source_page": "https://www.liangzh.gov.cn/lzhxxgk/xxgkml/czgk/bmyjs/202607/t20260710_771520.html",
+      "download_url": "https://www.liangzh.gov.cn/lzhxxgk/xxgkml/czgk/bmyjs/202607/P020260710535957663514.xlsx",
+      "sha256": "d395b965bfc9959c9d7009ddbb18ba97510f14388a567412987d450ac4d1234b",
+      "role": "supplementary",
+      "sheets": 10,
+      "formulas": 0,
+      "merged_ranges": 46,
+      "chinese_cells": 380,
+      "unique_chinese_strings": 247
+    },
+    {
+      "file": "liangzihu-expenses.xlsx",
+      "original_title": "区发改经信局2026年部门预算 - 三公经费支出表及支出情况说明",
+      "publisher": "Liangzihu District Government",
+      "source_page": "https://www.liangzh.gov.cn/lzhxxgk/xxgkml/czgk/bmyjs/202607/t20260710_771520.html",
+      "download_url": "https://www.liangzh.gov.cn/lzhxxgk/xxgkml/czgk/bmyjs/202607/P020260710535758412936.xlsx",
+      "sha256": "4a88cc419596d11f7189fed839054a21015d580b4497363603cf83500c71d642",
+      "role": "supplementary",
+      "sheets": 1,
+      "formulas": 0,
+      "merged_ranges": 1,
+      "chinese_cells": 11,
+      "unique_chinese_strings": 11
+    },
+    {
+      "file": "zhangye-budget.xlsx",
+      "original_title": "004部门预算公开表 (减负办)",
+      "publisher": "Zhangye Municipal Government",
+      "source_page": "https://www.zhangye.gov.cn/zyszfxxgk/fdzdgknr_5657/sgjfjysxx/bmczyjsjsgjf/202603/t20260313_1518781_ghb.html",
+      "download_url": "https://www.zhangye.gov.cn/zyszfxxgk/fdzdgknr_5657/sgjfjysxx/bmczyjsjsgjf/202603/W020260316575619714912.xlsx",
+      "sha256": "4ef31a164a3b6cb9f4a1818f3046a273f061186f05d6209a4ee90e28d6cf62d4",
+      "role": "supplementary",
+      "sheets": 15,
+      "formulas": 0,
+      "merged_ranges": 58,
+      "chinese_cells": 302,
+      "unique_chinese_strings": 206
+    }
+  ]
+}

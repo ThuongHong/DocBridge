@@ -248,8 +248,55 @@ unfinished translation requires a new job to keep its profile consistent.
   matches are rejected before writing an output. Wildcards, named/external
   ranges, computed criteria and other formula functions are not synchronized;
   recalculate and inspect these workbooks in a spreadsheet application.
-  Markdown retains the original formula text. Shared strings are cloned per cell
-  when different translations are needed. Sheet names are not translated.
+  Markdown retains formula expressions as text. Chinese worksheet names, print
+  header/footer literals and cell notes/comments are extracted for translation.
+  Header/footer fields, formatting and font names stay intact. Translated names
+  are sanitized to Excel's 31-character limit and made unique without regard to
+  case. Local sheet qualifiers in formulas, defined names, chart references,
+  validation/conditional expressions, local pivot cache sources and internal
+  hyperlinks follow renamed sheets. Constant internal `HYPERLINK` targets are
+  updated; other formula string constants, external references and structured
+  column labels stay intact. Dynamic `INDIRECT` references or computed `HYPERLINK`
+  targets prevent renaming on export: preserve the original sheet names in
+  review, or review/replace those references.
+  Other formulas that compute sheet names from strings still require review.
+  Literal validation dropdown options are translated; range/formula validations
+  stay formulas. Translated options must agree with translated cells in their
+  validation range. Conflicts, commas/control characters in options, or inline
+  lists exceeding Excel's 255-character limit require review before export.
+  Adjacent rich text runs with identical complete properties are translated as
+  a group; mixed formatting stays separate. Phonetic guides are excluded from
+  display text and removed when their underlying text changes. Identical reviewed
+  shared-string results reuse one XML entry, while each cell retains its own
+  editable target. The desktop's **Excel: Readable** export wraps changed text
+  and increases row heights using available font metrics, including horizontal
+  and vertical merged cells. Column widths, hidden rows/columns, formulas,
+  values and merge ranges stay intact. At Excel's row-height cap, plain-text
+  cells can receive a private font copy reduced in 0.5-point steps down to 9pt;
+  unrelated cells and rich text fonts stay unchanged. **Preserve layout** keeps
+  the original dimensions/styles, which can clip longer English. The library
+  defaults to `excel_layout="preserve"`; the desktop defaults to `readable` and
+  remembers the selection. Sheets wider than their printable paper area are
+  fitted to one page wide with unlimited page height; paper size, margins and
+  manual row breaks stay intact. A single oversized column uses an explicit
+  print percentage because LibreOffice can ignore fit-to-width for that case.
+  Readable export can change pagination and page counts; print scaling also
+  reduces the effective printed font size. See [layout validation](docs/EXCEL_LAYOUT.md).
+  Font substitution, rotation, special display formats, unsupported large merges
+  and remaining height caps are reported under `coverage.layout`, with bounded
+  examples. Measurement estimates fit; review native Office output before printing.
+  Large or wide tables use cell-address rows in Markdown.
+  Translation reuse within an XLSX job is bounded and scoped to provider/model,
+  glossary, exact cell text/context and style. Argos translates the cell text;
+  surrounding context informs the online provider only. Million-cell workbooks
+  still require substantial memory and checkpoint disk space; sparse output and
+  reuse do not make the document model memory independent of the cell count.
+  XLSX export records residual Han counts and bounded location examples in the
+  job report (`coverage`), distinguishing translatable cells/titles/headers/notes
+  from preserved formulas, display caches, metadata and other detected text.
+  Only referenced shared strings count as displayed cells. Images are not
+  OCR-scanned, and formula display caches require spreadsheet recalculation;
+  successful translation of all extracted segments is not a completeness claim.
   Chart titles and text labels are translated; ordinary worksheet references
   and embedded XLSX chart workbooks share targets with their chart caches.
   External/unsupported references can reset cached labels when refreshed.

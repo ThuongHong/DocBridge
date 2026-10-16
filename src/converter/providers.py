@@ -25,7 +25,7 @@ PROTECTED = re.compile(
     r"(?<![A-Za-z])\d+(?:[.,:/-]\d+)*(?:%|\s*(?:kPa|MPa|Pa|mV|kV|V|mA|A|"
     r"kHz|MHz|Hz|kW|W|Nm|rpm|mm|cm|km|kg|ms|s|°C|°F|℃)(?![A-Za-z]))?"
 )
-HAN = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
+HAN = re.compile(r"[\u3400-\u9fff\uf900-\ufaff\U00020000-\U0002ffff\U00030000-\U000323af]")
 
 
 class TranslationError(RuntimeError):
@@ -44,9 +44,9 @@ def protection_pattern(glossary: dict) -> re.Pattern:
 def signature(kind: str, profile: dict, glossary: dict) -> str:
     payload = json.dumps(
         {"kind": kind, "profile": profile, "glossary": glossary,
-         # Also versions Argos's translation policy: long segments are now
-         # split by the adapter, rather than by Pipeline before translation.
-         "prompt_version": 5 if kind == "argos" else 3},
+         # Extended Han detection changes which text reaches translation. Keep
+         # historical reviewed exports usable, but require a fresh profile to resume.
+         "prompt_version": 6 if kind == "argos" else 4},
         ensure_ascii=False,
         sort_keys=True,
     )

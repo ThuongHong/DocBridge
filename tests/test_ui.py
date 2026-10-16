@@ -405,3 +405,20 @@ def test_dead_worker_backlog_is_processed_before_finishing(word_file, store, mon
     window.poll()
     assert not window.progress_messages
     window.close()
+
+
+def test_excel_layout_choice_defaults_readable_and_persists(store, tmp_path, monkeypatch):
+    monkeypatch.setenv('CONVERTER_DATA_DIR', str(tmp_path / 'preferences'))
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(store.root)
+    assert window.excel_layout_combo.currentData() == 'readable'
+    assert window.excel_layout_combo.itemText(0) == 'Readable'
+    window.excel_layout_combo.setCurrentIndex(window.excel_layout_combo.findData('preserve'))
+    assert load_preferences()['excel_layout'] == 'preserve'
+    window.language_combo.setCurrentIndex(window.language_combo.findData('vi'))
+    assert window.excel_layout_combo.itemText(0) == 'Dễ đọc'
+    window.close()
+    again = MainWindow(store.root)
+    assert again.excel_layout_combo.currentData() == 'preserve'
+    app.processEvents()
+    again.close()

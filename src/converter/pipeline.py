@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import tempfile
+from collections import OrderedDict
 from contextlib import closing
 from pathlib import Path
 
@@ -73,9 +74,35 @@ class Pipeline:
         if not doc.segments:
             raise ValueError("Không trích xuất được text. Hãy kiểm tra file hoặc kết quả OCR.")
         pending = [s for s in doc.segments if s.target is None]
+        pending_count = len(pending)
+        aliases = {}
+        # Job-local reuse is scoped by the full provider/model/glossary fingerprint
+        # and exact context/style. Never seed it from reviewed per-cell targets.
+        # Bound both key count and key text; independent cell Segment objects remain.
+        if doc.format == "xlsx":
+            representatives, keys, key_chars = [], OrderedDict(), 0
+            for index, segment in enumerate(pending):
+                if index % 4096 == 0:
+                    self.control()
+                key = (profile, segment.source, segment.context,
+                       json.dumps(segment.style, sort_keys=True))
+                prior = keys.get(key)
+                if prior is not None:
+                    keys.move_to_end(key)
+                    aliases.setdefault(prior.id, []).append(segment)
+                else:
+                    representatives.append(segment)
+                    size = sum(len(value) for value in key)
+                    if size <= 4 * 1024 * 1024:
+                        while keys and (len(keys) >= 4096 or key_chars + size > 4 * 1024 * 1024):
+                            old_key, _ = keys.popitem(last=False)
+                            key_chars -= sum(len(value) for value in old_key)
+                        keys[key] = segment
+                        key_chars += size
+            pending = representatives
         # Clear the parsing label before packing or waiting for the first API
         # response; neither step necessarily produces a completed segment yet.
-        self.progress(job_id, "Đang dịch", len(doc.segments) - len(pending), len(doc.segments))
+        self.progress(job_id, "Đang dịch", len(doc.segments) - pending_count, len(doc.segments))
         # Batch limits include the surrounding context and never rely on output mode.
         batches, current, count = [], [], 0
         for segment in pending:
@@ -100,6 +127,8 @@ class Pipeline:
             result.update(values)
             for sid, text in values.items():
                 lookup[sid].target = text
+                for duplicate in aliases.get(sid, []):
+                    duplicate.target = text
             doc.revision += 1
             self.store.save_document(job_id, doc)
             done = sum(s.target is not None for s in doc.segments)
@@ -149,6 +178,7 @@ class Pipeline:
         ocr_language="chi_sim+chi_tra+eng",
         export_only=False,
         operation="translate",
+        excel_layout="preserve",
     ):
         if operation not in {"translate", "convert"}:
             raise ValueError("Tác vụ không hợp lệ.")
@@ -166,7 +196,7 @@ class Pipeline:
                 doc = self.translate(job_id, provider, glossary or {}, ocr_language)
             if operation != "convert" and not doc.complete():
                 raise ValueError("Còn đoạn chưa dịch; tiếp tục dịch trước khi xuất.")
-            return self.export(job_id, doc, mode, output_dir, source=operation == "convert")
+            return self.export(job_id, doc, mode, output_dir, source=operation == "convert", excel_layout=excel_layout)
         except Paused:
             self.store.update(job_id, status="paused")
             return {}
@@ -178,7 +208,7 @@ class Pipeline:
             raise
 
     def export(
-        self, job_id: str, doc: Document, mode: str, output_dir: Path, *, source=False
+        self, job_id: str, doc: Document, mode: str, output_dir: Path, *, source=False, excel_layout="preserve"
     ) -> dict:
         if source:
             mode = "markdown"
@@ -217,9 +247,26 @@ class Pipeline:
             try:
                 if kind == "office":
                     writer = write_pdf_docx if doc.format == "pdf" else write_office
-                    writer(doc, Path(temporary))
+                    if doc.format == "pdf":
+                        writer(doc, Path(temporary))
+                    else:
+                        writer(doc, Path(temporary), excel_layout=excel_layout)
+                    if doc.coverage:
+                        self.store.save_document(job_id, doc)
                 else:
                     text = render_markdown(doc, asset_target.name, source=source)
+                    if doc.format == "xlsx" and not source:
+                        from .excel_coverage import audit_markdown, coverage_warning
+
+                        coverage = audit_markdown(doc, text)
+                        if doc.coverage:
+                            doc.coverage["markdown"] = coverage
+                        else:
+                            doc.coverage = {**coverage, "output": "markdown"}
+                        warning = coverage_warning(coverage).replace("Excel coverage:", "Excel Markdown coverage:")
+                        doc.warnings = [w for w in doc.warnings if not w.startswith("Excel Markdown coverage:")]
+                        doc.warnings.append(warning)
+                        self.store.save_document(job_id, doc)
                     if doc.assets:
                         temp_assets = Path(
                             tempfile.mkdtemp(dir=output_dir, prefix=".converter-assets-")
@@ -267,6 +314,7 @@ class Pipeline:
                     "warnings": doc.warnings,
                     "exports": job["exports"],
                     "segments": len(doc.segments),
+                    "coverage": doc.coverage,
                 },
                 ensure_ascii=False,
                 indent=2,

@@ -46,7 +46,17 @@ def render_markdown(doc: Document, asset_folder: str, *, source: bool = False) -
 
     def render(block: Block) -> str:
         if block.kind == "section":
-            title = escape(block.meta.get("title", ""))
+            title_id = block.meta.get("title_segment")
+            title = escape((lookup[title_id].source if source else lookup[title_id].text)
+                           if title_id else block.meta.get("title", ""))
+            if title_id and not source:
+                from .excel_text import sheet_names
+                segment = lookup[title_id]
+                names = sheet_names([s for s in doc.segments
+                                     if s.anchor.get("embedded") == segment.anchor.get("embedded")],
+                                    block.meta.get("sheet_names", []))
+                title = escape(names.get(segment.source, segment.text))
+            title = escape(block.meta.get("title_prefix", "")) + title
             children = [child for child in block.children
                         if child.meta.get("role") not in {"page_header", "page_footer"}]
             return f"## {title}\n\n" + "\n\n".join(render(child) for child in children)
@@ -59,6 +69,11 @@ def render_markdown(doc: Document, asset_folder: str, *, source: bool = False) -
             if key in doc.assets:
                 return f"![Image]({quote(asset_folder)}/{quote(Path(key).name)})"
             return ""
+        if block.kind == "sparse_table":
+            return "| Cell | Value |\n| --- | --- |\n" + "\n".join(
+                "| " + escape(address) + " | "
+                + inline(Block("cell", segments=segments, meta={"literal": literal})).replace("\n", "<br>")
+                + " |" for address, segments, literal in block.meta.get("entries", []))
         if block.kind == "table":
             rows = []
             width = max((len(row.children) for row in block.children), default=0)

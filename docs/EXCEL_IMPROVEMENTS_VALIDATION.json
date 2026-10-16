@@ -1,0 +1,780 @@
+{
+  "date": "2026-10-16",
+  "implementation": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "baseline_commit": "db3d610",
+    "source_python_sha256": "786508e2ce46e04a12e93ffb68bea29f3b2db2d5078111e185feedb1ac7ba5f4"
+  },
+  "automated_checks": {
+    "pytest": {
+      "passed": 178,
+      "skipped": 1,
+      "seconds": 18.21
+    },
+    "ruff": "passed",
+    "git_diff_check": "passed"
+  },
+  "parser_coverage": {
+    "small_workbooks": 6,
+    "chinese_cells_compared": 2228,
+    "missing_or_changed_cells": 0,
+    "missing_chinese_sheet_titles": 0,
+    "workbooks": [
+      {
+        "file": "huangshi-tree-transplant.xlsx",
+        "status": "compared",
+        "segments": 286,
+        "chinese_cells_compared": 225,
+        "missing_or_changed_cells": 0,
+        "missing_examples": [],
+        "chinese_sheet_names_without_segments": []
+      },
+      {
+        "file": "hunan-construction-costs.xlsx",
+        "status": "compared",
+        "segments": 229,
+        "chinese_cells_compared": 211,
+        "missing_or_changed_cells": 0,
+        "missing_examples": [],
+        "chinese_sheet_names_without_segments": []
+      },
+      {
+        "file": "liangzihu-budget.xlsx",
+        "status": "compared",
+        "segments": 513,
+        "chinese_cells_compared": 380,
+        "missing_or_changed_cells": 0,
+        "missing_examples": [],
+        "chinese_sheet_names_without_segments": []
+      },
+      {
+        "file": "liangzihu-expenses.xlsx",
+        "status": "compared",
+        "segments": 14,
+        "chinese_cells_compared": 11,
+        "missing_or_changed_cells": 0,
+        "missing_examples": [],
+        "chinese_sheet_names_without_segments": []
+      },
+      {
+        "file": "mof-financial-reports.xlsx",
+        "status": "compared",
+        "segments": 2087,
+        "chinese_cells_compared": 1099,
+        "missing_or_changed_cells": 0,
+        "missing_examples": [],
+        "chinese_sheet_names_without_segments": []
+      },
+      {
+        "file": "zhangye-budget.xlsx",
+        "status": "compared",
+        "segments": 369,
+        "chinese_cells_compared": 302,
+        "missing_or_changed_cells": 0,
+        "missing_examples": [],
+        "chinese_sheet_names_without_segments": []
+      }
+    ]
+  },
+  "offline_argos_runs": [
+    {
+      "label": "baseline-hunan",
+      "source_sha256": "41857bf62eee214cc2c335f0373a62df4ce0435275806835f3c0e423e428e006",
+      "elapsed_seconds": 97.263,
+      "peak_rss_mib": 767.2,
+      "segments": 216,
+      "network_blocked": true,
+      "invariants_preserved": true,
+      "coverage": {},
+      "source_file": "hunan-construction-costs.xlsx",
+      "source_stats": {
+        "chinese_cells": 211,
+        "text_cells": 216,
+        "formula_cells": 6,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 99,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 1
+      },
+      "output_stats": {
+        "chinese_cells": 0,
+        "text_cells": 216,
+        "formula_cells": 6,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 99,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 1
+      },
+      "source_sheet_count": 10,
+      "output_sheet_names": [
+        "之前的表格",
+        "填写说明",
+        "项目基本情况表",
+        "费用汇总表",
+        "管理费明细表",
+        "安全生产措施费明细表",
+        "环境保护费明细表",
+        "文明施工费明细表",
+        "临时设施费明细表",
+        "智慧工地建设明细表"
+      ]
+    },
+    {
+      "label": "current-hunan",
+      "source_sha256": "41857bf62eee214cc2c335f0373a62df4ce0435275806835f3c0e423e428e006",
+      "elapsed_seconds": 97.616,
+      "peak_rss_mib": 767.2,
+      "segments": 229,
+      "network_blocked": true,
+      "invariants_preserved": true,
+      "coverage": {
+        "han_locations": {
+          "preserved_metadata": {
+            "count": 11,
+            "examples": [
+              {
+                "location": "docProps/app.xml:lpstr",
+                "text": "工作表"
+              },
+              {
+                "location": "docProps/app.xml:lpstr",
+                "text": "之前的表格"
+              },
+              {
+                "location": "docProps/app.xml:lpstr",
+                "text": "填写说明"
+              },
+              {
+                "location": "docProps/app.xml:lpstr",
+                "text": "项目基本情况表"
+              },
+              {
+                "location": "docProps/app.xml:lpstr",
+                "text": "费用汇总表"
+              }
+            ]
+          }
+        },
+        "images_not_ocr_scanned": 0,
+        "limitations": [
+          "Images are not OCR-scanned; runtime formula results require Excel recalculation.",
+          "Counts cover detectable OOXML text locations, not rendered pixels."
+        ]
+      },
+      "source_file": "hunan-construction-costs.xlsx",
+      "source_stats": {
+        "chinese_cells": 211,
+        "text_cells": 216,
+        "formula_cells": 6,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 99,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 1
+      },
+      "output_stats": {
+        "chinese_cells": 0,
+        "text_cells": 216,
+        "formula_cells": 6,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 99,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0
+      },
+      "source_sheet_count": 10,
+      "output_sheet_names": [
+        "Previous Table",
+        "Fill out instructions",
+        "Project Basic Sheet",
+        "Summary of costs",
+        "Detailed management fee stateme",
+        "Detailed cost breakdown of safe",
+        "List of cost details for enviro",
+        "A breakdown of civil constructi",
+        "Detailed cost statement for tem",
+        "List of intellectual sites buil"
+      ]
+    },
+    {
+      "label": "current-mof",
+      "source_sha256": "36442fae34ca161cabea0d2fa98ce43635d930ea27edd3a115d947dbcf52f3a4",
+      "elapsed_seconds": 208.611,
+      "peak_rss_mib": 767.2,
+      "segments": 2087,
+      "network_blocked": true,
+      "invariants_preserved": true,
+      "coverage": {
+        "han_locations": {
+          "preserved_metadata": {
+            "count": 20,
+            "examples": [
+              {
+                "location": "docProps/app.xml:lpstr",
+                "text": "工作表"
+              },
+              {
+                "location": "docProps/app.xml:lpstr",
+                "text": "汇总封面"
+              },
+              {
+                "location": "docProps/app.xml:lpstr",
+                "text": "分户封面"
+              },
+              {
+                "location": "docProps/app.xml:lpstr",
+                "text": "主要指标表"
+              },
+              {
+                "location": "docProps/app.xml:lpstr",
+                "text": "主要指标表（新保险准则）"
+              }
+            ]
+          }
+        },
+        "images_not_ocr_scanned": 0,
+        "limitations": [
+          "Images are not OCR-scanned; runtime formula results require Excel recalculation.",
+          "Counts cover detectable OOXML text locations, not rendered pixels."
+        ]
+      },
+      "source_file": "mof-financial-reports.xlsx",
+      "source_stats": {
+        "chinese_cells": 1099,
+        "text_cells": 2010,
+        "formula_cells": 2,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 78,
+        "rich_text_cells": 37,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0
+      },
+      "output_stats": {
+        "chinese_cells": 0,
+        "text_cells": 2010,
+        "formula_cells": 2,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 78,
+        "rich_text_cells": 37,
+        "validation_rules": 0,
+        "chinese_header_footer_nodes": 0
+      },
+      "source_sheet_count": 19,
+      "output_sheet_names": [
+        "Summary Cover",
+        "Separate Cover",
+        "Table of key indicators",
+        "Table of key indicators (new in",
+        "Tables of key indicators (2)",
+        "Table showing the value added o",
+        "Basic data sheets for commercia",
+        "Basic data sheet for commercial",
+        "Basic data sheet for performanc",
+        "Basic data sheet for perfor (2)",
+        "Business Insurance Company Perf",
+        "Basic data sheets for performan",
+        "Supplementary table for banking",
+        "Supplementary table for the sec",
+        "Supplementary insurance",
+        "Supplementary insurance industr",
+        "Supplementary insurance ind (2)",
+        "Supplementary scale for the gua",
+        "Supplementary statement for Ass"
+      ]
+    }
+  ],
+  "libreoffice_corpus_recalculation": {
+    "hunan-construction-costs": {
+      "formula_cells": [
+        {
+          "sheet_index": 4,
+          "cell": "C7",
+          "value": 0.0,
+          "display": "0",
+          "error": 0
+        },
+        {
+          "sheet_index": 5,
+          "cell": "C15",
+          "value": 0.0,
+          "display": "0",
+          "error": 0
+        },
+        {
+          "sheet_index": 6,
+          "cell": "C12",
+          "value": 0.0,
+          "display": "0",
+          "error": 0
+        },
+        {
+          "sheet_index": 7,
+          "cell": "C12",
+          "value": 0.0,
+          "display": "0",
+          "error": 0
+        },
+        {
+          "sheet_index": 8,
+          "cell": "C9",
+          "value": 0.0,
+          "display": "0",
+          "error": 0
+        },
+        {
+          "sheet_index": 9,
+          "cell": "D23",
+          "value": 0.0,
+          "display": "0",
+          "error": 0
+        }
+      ],
+      "sheets": [
+        "之前的表格",
+        "填写说明",
+        "项目基本情况表",
+        "费用汇总表",
+        "管理费明细表",
+        "安全生产措施费明细表",
+        "环境保护费明细表",
+        "文明施工费明细表",
+        "临时设施费明细表",
+        "智慧工地建设明细表"
+      ]
+    },
+    "hunan-construction-costs.en": {
+      "formula_cells": [
+        {
+          "sheet_index": 4,
+          "cell": "C7",
+          "value": 0.0,
+          "display": "0",
+          "error": 0
+        },
+        {
+          "sheet_index": 5,
+          "cell": "C15",
+          "value": 0.0,
+          "display": "0",
+          "error": 0
+        },
+        {
+          "sheet_index": 6,
+          "cell": "C12",
+          "value": 0.0,
+          "display": "0",
+          "error": 0
+        },
+        {
+          "sheet_index": 7,
+          "cell": "C12",
+          "value": 0.0,
+          "display": "0",
+          "error": 0
+        },
+        {
+          "sheet_index": 8,
+          "cell": "C9",
+          "value": 0.0,
+          "display": "0",
+          "error": 0
+        },
+        {
+          "sheet_index": 9,
+          "cell": "D23",
+          "value": 0.0,
+          "display": "0",
+          "error": 0
+        }
+      ],
+      "sheets": [
+        "Previous Table",
+        "Fill out instructions",
+        "Project Basic Sheet",
+        "Summary of costs",
+        "Detailed management fee stateme",
+        "Detailed cost breakdown of safe",
+        "List of cost details for enviro",
+        "A breakdown of civil constructi",
+        "Detailed cost statement for tem",
+        "List of intellectual sites buil"
+      ]
+    },
+    "mof-financial-reports": {
+      "formula_cells": [
+        {
+          "sheet_index": 1,
+          "cell": "B51",
+          "value": 87.0,
+          "display": "87",
+          "error": 0
+        },
+        {
+          "sheet_index": 1,
+          "cell": "B52",
+          "value": 14.5,
+          "display": "14.5",
+          "error": 0
+        }
+      ],
+      "sheets": [
+        "汇总封面",
+        "分户封面",
+        "主要指标表",
+        "主要指标表（新保险准则）",
+        "主要指标表 (2)",
+        "国有资本保值增值情况表",
+        "商业银行绩效评价基础数据表",
+        "商业银行绩效评价历史对标基础数据表",
+        "证券业绩效评价基础数据表",
+        "商业保险公司绩效评价基础数据表",
+        "商业保险公司绩效评价历史对标基础数据表",
+        "其他金融企业绩效评价基础数据表",
+        "银行业补充表",
+        "证券业补充表",
+        "保险业补充表",
+        "保险业补充表 (已执行)",
+        "保险业补充表 (未执行)",
+        "担保业补充表",
+        "资产管理公司补充表"
+      ]
+    },
+    "mof-financial-reports.en": {
+      "formula_cells": [
+        {
+          "sheet_index": 1,
+          "cell": "B51",
+          "value": 87.0,
+          "display": "87",
+          "error": 0
+        },
+        {
+          "sheet_index": 1,
+          "cell": "B52",
+          "value": 14.5,
+          "display": "14.5",
+          "error": 0
+        }
+      ],
+      "sheets": [
+        "Summary Cover",
+        "Separate Cover",
+        "Table of key indicators",
+        "Table of key indicators (new in",
+        "Tables of key indicators (2)",
+        "Table showing the value added o",
+        "Basic data sheets for commercia",
+        "Basic data sheet for commercial",
+        "Basic data sheet for performanc",
+        "Basic data sheet for perfor (2)",
+        "Business Insurance Company Perf",
+        "Basic data sheets for performan",
+        "Supplementary table for banking",
+        "Supplementary table for the sec",
+        "Supplementary insurance",
+        "Supplementary insurance industr",
+        "Supplementary insurance ind (2)",
+        "Supplementary scale for the gua",
+        "Supplementary statement for Ass"
+      ]
+    }
+  },
+  "libreoffice_reference_recalculation": {
+    "reference-source": {
+      "formula_cells": [
+        {
+          "sheet_index": 2,
+          "cell": "A1",
+          "value": 13.0,
+          "display": "13",
+          "error": 0
+        },
+        {
+          "sheet_index": 2,
+          "cell": "A2",
+          "value": 13.0,
+          "display": "13",
+          "error": 0
+        },
+        {
+          "sheet_index": 2,
+          "cell": "A3",
+          "value": 18.0,
+          "display": "18",
+          "error": 0
+        },
+        {
+          "sheet_index": 2,
+          "cell": "A4",
+          "value": 9.0,
+          "display": "9",
+          "error": 0
+        },
+        {
+          "sheet_index": 2,
+          "cell": "A5",
+          "value": 0.0,
+          "display": "Jump",
+          "error": 0
+        },
+        {
+          "sheet_index": 2,
+          "cell": "A6",
+          "value": 0.0,
+          "display": "数据一!B1",
+          "error": 0
+        }
+      ],
+      "sheets": [
+        "数据一",
+        "数据二",
+        "汇总"
+      ]
+    },
+    "reference-output": {
+      "formula_cells": [
+        {
+          "sheet_index": 2,
+          "cell": "A1",
+          "value": 13.0,
+          "display": "13",
+          "error": 0
+        },
+        {
+          "sheet_index": 2,
+          "cell": "A2",
+          "value": 13.0,
+          "display": "13",
+          "error": 0
+        },
+        {
+          "sheet_index": 2,
+          "cell": "A3",
+          "value": 18.0,
+          "display": "18",
+          "error": 0
+        },
+        {
+          "sheet_index": 2,
+          "cell": "A4",
+          "value": 9.0,
+          "display": "9",
+          "error": 0
+        },
+        {
+          "sheet_index": 2,
+          "cell": "A5",
+          "value": 0.0,
+          "display": "Jump",
+          "error": 0
+        },
+        {
+          "sheet_index": 2,
+          "cell": "A6",
+          "value": 0.0,
+          "display": "数据一!B1",
+          "error": 0
+        }
+      ],
+      "sheets": [
+        "Bob's data",
+        "Second data",
+        "Summary"
+      ]
+    }
+  },
+  "large_roundtrip": {
+    "test_kind": "deterministic ASCII replacement; not real machine translation",
+    "memory_limit_gib": 7,
+    "segments": 1056742,
+    "parse_seconds": 45.14,
+    "save_seconds": 41.674,
+    "document_bytes": 669542761,
+    "export_seconds": 99.768,
+    "coverage": {
+      "han_locations": {
+        "preserved_metadata": {
+          "count": 7,
+          "examples": [
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "工作表"
+            },
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "新增资产配置"
+            },
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "政府采购"
+            },
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "政府采购（数据源）"
+            },
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "新增资产配置（数据源）"
+            }
+          ]
+        }
+      },
+      "images_not_ocr_scanned": 0,
+      "limitations": [
+        "Images are not OCR-scanned; runtime formula results require Excel recalculation.",
+        "Counts cover detectable OOXML text locations, not rendered pixels."
+      ]
+    },
+    "output_bytes": 6524346,
+    "invariants_preserved": true,
+    "source_sha256": "d4ae9936aa319440103659706ae98096ac64fb248d38409e317df4ed4f7d36ea",
+    "status": "passed",
+    "elapsed_seconds": 224.522,
+    "peak_rss_mib": 3289.8
+  },
+  "large_output_independent_audit": {
+    "file": "ouc-structural-stress.xlsx",
+    "bytes": 6524346,
+    "sha256": "562a63c3631c8fae272e5140bfdf3a087e009f9cf56d81b9fe653a25ce9dd9c7",
+    "uncompressed_bytes": 93406647,
+    "sheets": [
+      {
+        "name": "Text_c8ccf2f693786159",
+        "state": "visible",
+        "chinese_cells": 0,
+        "text_cells": 1049275,
+        "formula_cells": 214,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 1,
+        "rich_text_cells": 26,
+        "validation_rules": 2,
+        "chinese_inline_list_options": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [
+          {
+            "cell": "R2",
+            "formula": "Q2*O2/10000"
+          },
+          {
+            "cell": "R3",
+            "formula": "Q3*O3/10000"
+          },
+          {
+            "cell": "R67",
+            "formula": "Q67*O67/10000"
+          }
+        ],
+        "merge_examples": [
+          "A6:B21"
+        ]
+      },
+      {
+        "name": "Text_0bc0c2011ec60920",
+        "state": "visible",
+        "chinese_cells": 0,
+        "text_cells": 22,
+        "formula_cells": 65533,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 12,
+        "rich_text_cells": 7,
+        "validation_rules": 0,
+        "chinese_inline_list_options": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [
+          {
+            "cell": "K4",
+            "formula": "J4*I4/10000"
+          },
+          {
+            "cell": "K5",
+            "formula": "J5*I5/10000"
+          },
+          {
+            "cell": "K69",
+            "formula": "J69*I69/10000"
+          }
+        ],
+        "merge_examples": [
+          "I1:I3",
+          "J1:J3",
+          "K1:K3"
+        ]
+      },
+      {
+        "name": "Text_9035e552cfb9f5f0",
+        "state": "visible",
+        "chinese_cells": 0,
+        "text_cells": 3948,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 0,
+        "rich_text_cells": 0,
+        "validation_rules": 0,
+        "chinese_inline_list_options": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": []
+      },
+      {
+        "name": "Text_806256993c89f0e5",
+        "state": "visible",
+        "chinese_cells": 0,
+        "text_cells": 3436,
+        "formula_cells": 0,
+        "cross_sheet_formula_nodes": 0,
+        "chinese_formula_caches": 0,
+        "merged_ranges": 0,
+        "rich_text_cells": 1,
+        "validation_rules": 0,
+        "chinese_inline_list_options": 0,
+        "chinese_header_footer_nodes": 0,
+        "formula_examples": [],
+        "merge_examples": []
+      }
+    ],
+    "totals": {
+      "chinese_cells": 0,
+      "text_cells": 1056681,
+      "formula_cells": 65747,
+      "cross_sheet_formula_nodes": 0,
+      "chinese_formula_caches": 0,
+      "merged_ranges": 13,
+      "rich_text_cells": 34,
+      "validation_rules": 2,
+      "chinese_inline_list_options": 0,
+      "chinese_header_footer_nodes": 0
+    },
+    "sheet_count": 4,
+    "unique_chinese_strings": 0,
+    "most_repeated_chinese_strings": [],
+    "meets_core_criteria": false
+  },
+  "visual_check": {
+    "workbook": "hunan-construction-costs.xlsx",
+    "source_pdf_pages": 21,
+    "translated_pdf_pages": 21,
+    "pages_visually_inspected": [
+      1
+    ],
+    "finding": "English clips or overflows fixed-height cells. Dimensions preserved; no autofit."
+  },
+  "limits": [
+    "Million-cell stress uses deterministic ASCII replacements, not Argos inference.",
+    "No complete million-cell interactive review or multi-batch checkpoint benchmark.",
+    "No OCR of workbook images; formula strings and metadata may intentionally retain Chinese.",
+    "No formal semantic translation-quality score.",
+    "LibreOffice validation is not native Microsoft Excel validation."
+  ]
+}

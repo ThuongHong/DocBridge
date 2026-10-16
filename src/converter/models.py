@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from pathlib import Path
 
 SUPPORTED = {".docx", ".pptx", ".xlsx", ".pdf"}
@@ -52,6 +52,7 @@ class Document:
     assets: dict[str, str] = field(default_factory=dict)
     revision: int = 0
     adapter_version: int = 1
+    coverage: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -65,7 +66,15 @@ class Document:
         )
 
     def save(self, path: Path) -> None:
-        atomic_text(path, json.dumps(self.to_dict(), ensure_ascii=False, indent=2))
+        class Encoder(json.JSONEncoder):
+            def default(self, value):
+                if is_dataclass(value):
+                    # Shallow views let the encoder stream without deepcopying the
+                    # complete million-cell document into a second object graph.
+                    return {item.name: getattr(value, item.name) for item in fields(value)}
+                return super().default(value)
+
+        atomic_text(path, Encoder(ensure_ascii=False, indent=2).iterencode(self))
 
     @classmethod
     def load(cls, path: Path) -> Document:
@@ -100,7 +109,7 @@ def file_hash(path: Path) -> str:
     return digest.hexdigest()
 
 
-def atomic_text(path: Path, content: str) -> None:
+def atomic_text(path: Path, content) -> None:
     import os
     import tempfile
     import time
@@ -109,7 +118,10 @@ def atomic_text(path: Path, content: str) -> None:
     descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=".converter-")
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(content)
+            if isinstance(content, str):
+                stream.write(content)
+            else:
+                stream.writelines(content)
         for attempt in range(5):
             try:
                 os.replace(temporary, path)

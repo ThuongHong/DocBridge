@@ -73,7 +73,10 @@ def read_drawing_text(reader):
                 for segment in doc.segments[first_segment:]:
                     segment.anchor["embedded"] = target
                 for block in doc.blocks[first_block:]:
-                    block.meta["title"] = "Chart data: " + block.meta.get("title", "Sheet")
+                    if block.meta.get("title_segment"):
+                        block.meta["title_prefix"] = "Chart data: "
+                    else:
+                        block.meta["title"] = "Chart data: " + block.meta.get("title", "Sheet")
     cell_ids = defaultdict(list)
     for segment in doc.segments:
         anchor = segment.anchor

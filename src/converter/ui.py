@@ -309,6 +309,18 @@ class MainWindow(QMainWindow):
         mode_field.addWidget(self.mode_combo)
         self.mode_combo.setMinimumHeight(32)
         options.addLayout(mode_field, 1)
+        excel_field = QVBoxLayout()
+        self.excel_layout_label = QLabel("Excel:")
+        excel_field.addWidget(self.excel_layout_label)
+        self.excel_layout_combo = QComboBox()
+        self.excel_layout_combo.addItem("Dễ đọc", "readable")
+        self.excel_layout_combo.addItem("Giữ bố cục", "preserve")
+        self.excel_layout_combo.setCurrentIndex(max(0, self.excel_layout_combo.findData(
+            self.preferences.get("excel_layout", "readable")
+        )))
+        self.excel_layout_combo.setMinimumHeight(32)
+        excel_field.addWidget(self.excel_layout_combo)
+        options.addLayout(excel_field, 1)
         footer.addLayout(options)
         self.mode_combo.setToolTip("PDF → Office là DOCX dựng lại. Office đầu vào giữ định dạng gốc.")
         output_row = QHBoxLayout()
@@ -644,6 +656,7 @@ class MainWindow(QMainWindow):
         self.language_combo.currentIndexChanged.connect(self.change_appearance)
         self.ocr_language.currentIndexChanged.connect(self.save_display_preferences)
         self.argos_model_edit.editingFinished.connect(self.save_display_preferences)
+        self.excel_layout_combo.currentIndexChanged.connect(self.save_display_preferences)
 
     def provider_from_settings(self):
         return ProviderConfig(
@@ -741,6 +754,7 @@ class MainWindow(QMainWindow):
         self.more_button.setAccessibleName(self.tr("Thao tác khác"))
         self.output_browse_action.setToolTip(self.tr("Chọn thư mục"))
         self.mode_combo.setToolTip(self.tr("PDF → Office là DOCX dựng lại. Office đầu vào giữ định dạng gốc."))
+        self.excel_layout_combo.setToolTip(self.tr("Dễ đọc: xuống dòng, tăng chiều cao; có thể giảm font tới 9pt và đổi số trang in. Giữ bố cục: giữ kích thước gốc."))
         for action in self.findChildren(QAction):
             if action.property("translation_source"):
                 action.setText(self.tr(action.property("translation_source")))
@@ -796,6 +810,7 @@ class MainWindow(QMainWindow):
             "language": self.language,
             "ocr_language": self.ocr_language.currentData(),
             "argos_model": self.argos_model_edit.text().strip(),
+            "excel_layout": self.excel_layout_combo.currentData(),
         })
         try:
             save_preferences(self.preferences)
@@ -826,7 +841,8 @@ class MainWindow(QMainWindow):
 
     def update_task_ui(self):
         converting = self.operation_combo.currentData() == "convert"
-        for widget in (self.provider_label, self.provider_combo, self.mode_label, self.mode_combo):
+        for widget in (self.provider_label, self.provider_combo, self.mode_label, self.mode_combo,
+                       self.excel_layout_label, self.excel_layout_combo):
             widget.setVisible(not converting)
         self.start_button.setText(self.tr(
             "Chuyển sang Markdown" if converting else "Dịch / Tiếp tục"
@@ -1040,6 +1056,7 @@ class MainWindow(QMainWindow):
                     "provider": self.provider_combo.currentData(),
                     "operation": self.operation_combo.currentData(),
                     "mode": self.mode_combo.currentData(),
+                    "excel_layout": self.excel_layout_combo.currentData(),
                     "output_dir": self.output_edit.text(),
                     "ocr_language": self.ocr_language.currentData(),
                     "glossary": self.glossary_entries(),
@@ -1074,7 +1091,7 @@ class MainWindow(QMainWindow):
             button.setEnabled(not busy)
         self.pause_button.setEnabled(busy)
         self.cancel_button.setEnabled(busy)
-        for widget in (self.operation_combo, self.provider_combo, self.mode_combo, self.output_edit):
+        for widget in (self.operation_combo, self.provider_combo, self.mode_combo, self.excel_layout_combo, self.output_edit):
             widget.setEnabled(not busy)
         if hasattr(self, "save_review_button"):
             self.save_review_button.setEnabled(not busy)
@@ -1126,6 +1143,7 @@ class MainWindow(QMainWindow):
                 "operation": self.operation_combo.currentData(),
                 "profile": asdict(self.profile),
                 "mode": "markdown" if converting else self.mode_combo.currentData(),
+                "excel_layout": self.excel_layout_combo.currentData(),
                 "output_dir": self.output_edit.text(),
                 "glossary": self.glossary(),
                 "ocr_language": self.ocr_language.currentData(),

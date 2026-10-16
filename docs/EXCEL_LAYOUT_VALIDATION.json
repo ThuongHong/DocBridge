@@ -1,0 +1,321 @@
+{
+  "preserve": [
+    {
+      "page": 1,
+      "final_line_dark_pixels": 0,
+      "full_text_present": true,
+      "text_within_page_width": true
+    },
+    {
+      "page": 2,
+      "final_line_dark_pixels": 0,
+      "full_text_present": false,
+      "text_within_page_width": true
+    },
+    {
+      "page": 3,
+      "final_line_dark_pixels": 0,
+      "full_text_present": false,
+      "text_within_page_width": true
+    },
+    {
+      "page": 4,
+      "final_line_dark_pixels": 333,
+      "full_text_present": false,
+      "text_within_page_width": true
+    },
+    {
+      "page": 5,
+      "final_line_dark_pixels": 13088,
+      "full_text_present": true,
+      "text_within_page_width": false
+    }
+  ],
+  "readable": [
+    {
+      "page": 1,
+      "final_line_dark_pixels": 357,
+      "full_text_present": true,
+      "text_within_page_width": true
+    },
+    {
+      "page": 2,
+      "final_line_dark_pixels": 1154,
+      "full_text_present": true,
+      "text_within_page_width": true
+    },
+    {
+      "page": 3,
+      "final_line_dark_pixels": 559,
+      "full_text_present": true,
+      "text_within_page_width": true
+    },
+    {
+      "page": 4,
+      "final_line_dark_pixels": 257,
+      "full_text_present": true,
+      "text_within_page_width": true
+    },
+    {
+      "page": 5,
+      "final_line_dark_pixels": 2006,
+      "full_text_present": true,
+      "text_within_page_width": true
+    }
+  ],
+  "layout_diagnostics": {
+    "han_locations": {},
+    "images_not_ocr_scanned": 0,
+    "limitations": [
+      "Images are not OCR-scanned; runtime formula results require Excel recalculation.",
+      "Counts cover detectable OOXML text locations, not rendered pixels."
+    ],
+    "layout": {
+      "mode": "readable",
+      "workbooks": [
+        {
+          "mode": "readable",
+          "changed_text_cells": 5,
+          "wrapped_cells": 5,
+          "increased_rows": 5,
+          "reduced_font_cells": 1,
+          "print_fit_sheets": 1,
+          "issues": {
+            "normal_font_substitution": {
+              "count": 1,
+              "examples": [
+                "Calibri → Noto Sans"
+              ]
+            },
+            "font_substitution": {
+              "count": 5,
+              "examples": [
+                "xl/worksheets/sheet1.xml!A1: Arial → Liberation Sans",
+                "xl/worksheets/sheet2.xml!A1: Arial → Liberation Sans",
+                "xl/worksheets/sheet3.xml!A1: Arial → Liberation Sans",
+                "xl/worksheets/sheet4.xml!A1: Arial → Liberation Sans",
+                "xl/worksheets/sheet5.xml!A1: Arial → Liberation Sans"
+              ]
+            },
+            "font_reduced": {
+              "count": 1,
+              "examples": [
+                "xl/worksheets/sheet4.xml!A1: 20pt → 10pt"
+              ]
+            },
+            "print_single_column_scale": {
+              "count": 1,
+              "examples": [
+                "xl/worksheets/sheet5.xml: 53% for 1207px content / 660px paper width"
+              ]
+            }
+          },
+          "limitations": [
+            "Measured with available font metrics; native Excel/LibreOffice printing may differ.",
+            "Column widths, hidden rows/columns, formulas, values and merged ranges are preserved.",
+            "Row growth can change pagination and printed page counts."
+          ]
+        }
+      ]
+    }
+  },
+  "current-hunan": {
+    "output": "/home/lesliu/Documents/projects/converter/.test-data/excel-layout/hunan-construction-costs.en.readable.xlsx",
+    "coverage": {
+      "han_locations": {
+        "preserved_metadata": {
+          "count": 11,
+          "examples": [
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "工作表"
+            },
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "之前的表格"
+            },
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "填写说明"
+            },
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "项目基本情况表"
+            },
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "费用汇总表"
+            }
+          ]
+        }
+      },
+      "images_not_ocr_scanned": 0,
+      "limitations": [
+        "Images are not OCR-scanned; runtime formula results require Excel recalculation.",
+        "Counts cover detectable OOXML text locations, not rendered pixels."
+      ],
+      "layout": {
+        "mode": "readable",
+        "workbooks": [
+          {
+            "mode": "readable",
+            "changed_text_cells": 211,
+            "wrapped_cells": 211,
+            "increased_rows": 76,
+            "reduced_font_cells": 1,
+            "print_fit_sheets": 10,
+            "issues": {
+              "normal_font_substitution": {
+                "count": 1,
+                "examples": [
+                  "宋体 → Noto Sans"
+                ]
+              },
+              "font_substitution": {
+                "count": 211,
+                "examples": [
+                  "xl/worksheets/sheet1.xml!A1: 宋体 → Noto Sans bold",
+                  "xl/worksheets/sheet1.xml!A2: 宋体 → Noto Sans",
+                  "xl/worksheets/sheet1.xml!B2: 宋体 → Noto Sans",
+                  "xl/worksheets/sheet1.xml!D2: 宋体 → Noto Sans",
+                  "xl/worksheets/sheet1.xml!E2: 宋体 → Noto Sans"
+                ]
+              },
+              "font_reduced": {
+                "count": 1,
+                "examples": [
+                  "xl/worksheets/sheet2.xml!A1: 16pt → 15pt"
+                ]
+              },
+              "print_fit_one_page_wide": {
+                "count": 9,
+                "examples": [
+                  "xl/worksheets/sheet1.xml: 981px content / 722px paper width; unlimited height",
+                  "xl/worksheets/sheet3.xml: 1249px content / 1085px paper width; unlimited height",
+                  "xl/worksheets/sheet4.xml: 1130px content / 978px paper width; unlimited height",
+                  "xl/worksheets/sheet5.xml: 748px content / 650px paper width; unlimited height",
+                  "xl/worksheets/sheet6.xml: 860px content / 643px paper width; unlimited height"
+                ]
+              },
+              "print_single_column_scale": {
+                "count": 1,
+                "examples": [
+                  "xl/worksheets/sheet2.xml: 73% for 862px content / 650px paper width"
+                ]
+              }
+            },
+            "limitations": [
+              "Measured with available font metrics; native Excel/LibreOffice printing may differ.",
+              "Column widths, hidden rows/columns, formulas, values and merged ranges are preserved.",
+              "Row growth can change pagination and printed page counts."
+            ]
+          }
+        ]
+      }
+    },
+    "invariants_preserved": true,
+    "pdf_pages": 15,
+    "instructions_print_check": {
+      "page": 5,
+      "full_text_present": true,
+      "text_within_page_width": true
+    }
+  },
+  "current-mof": {
+    "output": "/home/lesliu/Documents/projects/converter/.test-data/excel-layout/mof-financial-reports.en.readable.xlsx",
+    "coverage": {
+      "han_locations": {
+        "preserved_metadata": {
+          "count": 20,
+          "examples": [
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "工作表"
+            },
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "汇总封面"
+            },
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "分户封面"
+            },
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "主要指标表"
+            },
+            {
+              "location": "docProps/app.xml:lpstr",
+              "text": "主要指标表（新保险准则）"
+            }
+          ]
+        }
+      },
+      "images_not_ocr_scanned": 0,
+      "limitations": [
+        "Images are not OCR-scanned; runtime formula results require Excel recalculation.",
+        "Counts cover detectable OOXML text locations, not rendered pixels."
+      ],
+      "layout": {
+        "mode": "readable",
+        "workbooks": [
+          {
+            "mode": "readable",
+            "changed_text_cells": 1099,
+            "wrapped_cells": 1099,
+            "increased_rows": 921,
+            "reduced_font_cells": 0,
+            "print_fit_sheets": 18,
+            "issues": {
+              "normal_font_substitution": {
+                "count": 1,
+                "examples": [
+                  "宋体 → Noto Sans"
+                ]
+              },
+              "font_substitution": {
+                "count": 1099,
+                "examples": [
+                  "xl/worksheets/sheet1.xml!A1: 仿宋_GB2312 → Noto Sans",
+                  "xl/worksheets/sheet1.xml!A2: 仿宋_GB2312 → Noto Sans",
+                  "xl/worksheets/sheet1.xml!A3: 黑体 → Noto Sans bold",
+                  "xl/worksheets/sheet1.xml!A12: 仿宋_GB2312 → Noto Sans",
+                  "xl/worksheets/sheet1.xml!C19: 仿宋_GB2312 → Noto Sans"
+                ]
+              },
+              "print_fit_one_page_wide": {
+                "count": 18,
+                "examples": [
+                  "xl/worksheets/sheet1.xml: 1140px content / 979px paper width; unlimited height",
+                  "xl/worksheets/sheet2.xml: 1654px content / 1054px paper width; unlimited height",
+                  "xl/worksheets/sheet3.xml: 1158px content / 726px paper width; unlimited height",
+                  "xl/worksheets/sheet4.xml: 1007px content / 726px paper width; unlimited height",
+                  "xl/worksheets/sheet5.xml: 1195px content / 726px paper width; unlimited height"
+                ]
+              }
+            },
+            "limitations": [
+              "Measured with available font metrics; native Excel/LibreOffice printing may differ.",
+              "Column widths, hidden rows/columns, formulas, values and merged ranges are preserved.",
+              "Row growth can change pagination and printed page counts."
+            ]
+          }
+        ]
+      }
+    },
+    "invariants_preserved": true,
+    "pdf_pages": 41
+  },
+  "verification": {
+    "pytest": {
+      "passed": 190,
+      "skipped": 1
+    },
+    "ruff": "passed",
+    "git_diff_check": "passed",
+    "render_engine": "LibreOffice via private UNO session",
+    "native_microsoft_excel_tested": false,
+    "new_argos_inference": false,
+    "million_cell_readable_stress_tested": false
+  }
+}

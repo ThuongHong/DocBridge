@@ -72,9 +72,10 @@ def test_excel_shared_strings_are_cell_specific_and_objects_survive(spreadsheet,
     output = tmp_path / "translated.xlsx"
     write_office(doc, output)
     assert_unmodified_parts(
-        spreadsheet, output, {"xl/worksheets/sheet1.xml", "xl/sharedStrings.xml"}
+        spreadsheet, output, {"xl/worksheets/sheet1.xml", "xl/sharedStrings.xml",
+                              "xl/workbook.xml", "xl/charts/chart1.xml"}
     )
-    sheet = load_workbook(output)["原始名称"]
+    sheet = load_workbook(output)["English 原始名称"]
     assert sheet["A1"].value == "First context"
     assert sheet["A2"].value == "Second context"
     assert sheet["B1"].value == 123
